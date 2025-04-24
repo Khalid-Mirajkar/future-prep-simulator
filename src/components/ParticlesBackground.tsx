@@ -33,7 +33,7 @@ const ParticlesBackground = () => {
     
     const initParticles = () => {
       particles = [];
-      const particleCount = Math.min(Math.floor(window.innerWidth * 0.08), 150);
+      const particleCount = Math.min(Math.floor(window.innerWidth * 0.15), 250);
       const spaceColors = [
         '#9b87f5', // bright purple
         '#6A0DAD', // deep purple
@@ -41,19 +41,22 @@ const ParticlesBackground = () => {
         '#E5DEFF', // light purple
         '#FFD700', // gold (for stars)
         '#B8B8FF', // periwinkle
+        '#4A0E4E',  // dark purple
+        '#8A4FFF'   // vibrant purple
       ];
       
       for (let i = 0; i < particleCount; i++) {
-        const type = Math.random() > 0.9 ? 'planet' : Math.random() > 0.6 ? 'star' : 'dust';
+        const type = Math.random() > 0.95 ? 'planet' : 
+                     Math.random() > 0.7 ? 'star' : 'dust';
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: type === 'planet' ? Math.random() * 4 + 2 : 
-                type === 'star' ? Math.random() * 2 + 0.5 :
-                Math.random() * 1 + 0.2,
-          speedX: (Math.random() - 0.5) * 0.2,
-          speedY: (Math.random() - 0.5) * 0.2,
-          opacity: type === 'planet' ? 0.8 : Math.random() * 0.5 + 0.3,
+          size: type === 'planet' ? Math.random() * 6 + 3 : 
+                type === 'star' ? Math.random() * 3 + 1 :
+                Math.random() * 1.5 + 0.5,
+          speedX: (Math.random() - 0.5) * 0.3,
+          speedY: (Math.random() - 0.5) * 0.3,
+          opacity: type === 'planet' ? 0.9 : Math.random() * 0.7 + 0.3,
           color: spaceColors[Math.floor(Math.random() * spaceColors.length)],
           type,
         });
@@ -63,11 +66,11 @@ const ParticlesBackground = () => {
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw cosmic gradient background
+      // Enhanced cosmic gradient background
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, '#0D0D0D');
-      gradient.addColorStop(0.4, '#1a1025');
-      gradient.addColorStop(0.8, '#2D1B41');
+      gradient.addColorStop(0.3, '#1a1025');
+      gradient.addColorStop(0.6, '#2D1B41');
       gradient.addColorStop(1, '#3D2459');
       
       ctx.fillStyle = gradient;
@@ -87,29 +90,29 @@ const ParticlesBackground = () => {
         ctx.beginPath();
         const particleGradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
-          particle.x, particle.y, particle.size * 2
+          particle.x, particle.y, particle.size * 3
         );
         
         const alpha = Math.floor(particle.opacity * 255).toString(16).padStart(2, '0');
         
         if (particle.type === 'star') {
-          // Create twinkling effect for stars
-          particle.opacity = 0.3 + Math.sin(Date.now() * 0.003) * 0.2;
+          // Enhanced twinkling effect for stars
+          particle.opacity = 0.4 + Math.sin(Date.now() * 0.005) * 0.3;
           particleGradient.addColorStop(0, `${particle.color}${alpha}`);
-          particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
+          particleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         } else if (particle.type === 'planet') {
-          // Create planet-like appearance
+          // More distinct planet-like appearance
           particleGradient.addColorStop(0, `${particle.color}${alpha}`);
-          particleGradient.addColorStop(0.6, `${particle.color}44`);
+          particleGradient.addColorStop(0.5, `${particle.color}66`);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
           ctx.fillStyle = particleGradient;
-          ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
+          ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, Math.PI * 2);
         } else {
-          // Cosmic dust
+          // Cosmic dust with slight variation
           particleGradient.addColorStop(0, `${particle.color}${alpha}`);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
@@ -120,9 +123,9 @@ const ParticlesBackground = () => {
         ctx.fill();
       });
       
-      // Draw subtle connections between nearby particles
-      ctx.strokeStyle = 'rgba(155, 135, 245, 0.05)';
-      ctx.lineWidth = 0.5;
+      // Enhanced particle connections
+      ctx.strokeStyle = 'rgba(155, 135, 245, 0.1)';
+      ctx.lineWidth = 0.7;
       
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -130,7 +133,7 @@ const ParticlesBackground = () => {
           const dy = particles[i].y - particles[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          if (distance < 100) {
+          if (distance < 120) {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
