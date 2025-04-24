@@ -8,6 +8,7 @@ type Particle = {
   speedX: number;
   speedY: number;
   opacity: number;
+  color: string;
 };
 
 const ParticlesBackground = () => {
@@ -32,6 +33,7 @@ const ParticlesBackground = () => {
     const initParticles = () => {
       particles = [];
       const particleCount = Math.min(Math.floor(window.innerWidth * 0.05), 100);
+      const colors = ['#9b87f5', '#6A0DAD', '#7B2CBF'];
       
       for (let i = 0; i < particleCount; i++) {
         particles.push({
@@ -41,6 +43,7 @@ const ParticlesBackground = () => {
           speedX: (Math.random() - 0.5) * 0.3,
           speedY: (Math.random() - 0.5) * 0.3,
           opacity: Math.random() * 0.5 + 0.1,
+          color: colors[Math.floor(Math.random() * colors.length)],
         });
       }
     };
@@ -48,7 +51,16 @@ const ParticlesBackground = () => {
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      particles.forEach((particle, index) => {
+      // Draw gradient background
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#0D0D0D');
+      gradient.addColorStop(0.5, '#5A189A');
+      gradient.addColorStop(1, '#7B2CBF');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach((particle) => {
         // Update position
         particle.x += particle.speedX;
         particle.y += particle.speedY;
@@ -62,15 +74,15 @@ const ParticlesBackground = () => {
         
         // Draw particle
         ctx.beginPath();
-        const gradient = ctx.createRadialGradient(
+        const particleGradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
           particle.x, particle.y, particle.size * 2
         );
         
-        gradient.addColorStop(0, `rgba(155, 135, 245, ${particle.opacity})`);
-        gradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
+        particleGradient.addColorStop(0, `${particle.color}${Math.floor(particle.opacity * 255).toString(16).padStart(2, '0')}`);
+        particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
         
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = particleGradient;
         ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
         ctx.fill();
       });
@@ -110,7 +122,7 @@ const ParticlesBackground = () => {
   return (
     <canvas 
       ref={canvasRef}
-      className="fixed top-0 left-0 w-full h-full -z-10 opacity-70"
+      className="fixed top-0 left-0 w-full h-full -z-10"
     />
   );
 };

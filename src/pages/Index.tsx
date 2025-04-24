@@ -1,8 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import FeatureCard from "@/components/FeatureCard";
 import TestimonialCarousel from "@/components/TestimonialCarousel";
+import ProcessSection from "@/components/ProcessSection";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -55,15 +57,16 @@ const Index = () => {
       {/* Hero Section */}
       <section className="min-h-screen pt-24 pb-12 flex flex-col justify-center relative">
         <div className="container mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-text-reveal text-gradient">
             AI INTERVIEW SIMULATOR
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-gray-300 max-w-3xl mx-auto">
-            Personalized mock interviews, powered by real-time AI. Prep smarter, interview better.
+          <p className="text-xl md:text-2xl mb-4 text-gray-300 max-w-3xl mx-auto">
+            The future of interview prep is here. Tailored. Realistic. Powerful.
           </p>
-          <button className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full">
+          <button className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4">
             Start Free Practice
           </button>
+          <p className="text-gray-400 text-sm">Already helping 1,200+ students ace their dream interviews</p>
         </div>
       </section>
       
@@ -87,7 +90,10 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Testimonials Section */}
+      {/* Process Section */}
+      <ProcessSection />
+      
+      {/* Testimonials */}
       <section id="testimonials" className="py-20 relative">
         <div className="container mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
@@ -98,7 +104,6 @@ const Index = () => {
               Don't just take our word for it. Here's what our users have achieved with the AI Interview Simulator.
             </p>
           </div>
-          
           <TestimonialCarousel />
         </div>
       </section>

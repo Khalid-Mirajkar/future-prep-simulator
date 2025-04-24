@@ -47,7 +47,7 @@
 
 @layer utilities {
   .text-gradient {
-    @apply bg-gradient-to-r from-neon-purple via-neon-pink to-neon-blue bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-neon-purple via-neon-pink to-neon-blue bg-clip-text text-transparent animate-text-reveal;
   }
   
   .text-shadow-glow {
@@ -66,7 +66,7 @@
   }
   
   .glass-card {
-    @apply backdrop-blur-xl bg-white/[0.02] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
+    @apply backdrop-blur-xl bg-white/[0.02] border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] hover:bg-white/[0.04] transition-all duration-300;
   }
 }
 
