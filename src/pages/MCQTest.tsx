@@ -1,12 +1,29 @@
 
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMCQTest } from '@/hooks/useMCQTest';
 import MCQQuestionDisplay from '@/components/MCQQuestionDisplay';
 import MCQTestResults from '@/components/MCQTestResults';
 import MCQTestLoading from '@/components/MCQTestLoading';
 import MCQTestError from '@/components/MCQTestError';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+
+// Define TypeScript interface for location state
+interface LocationState {
+  companyName: string;
+  jobTitle: string;
+  companyLogo?: string;
+}
 
 const MCQTest: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Safely access location.state with proper typing
+  const locationState = location.state as LocationState | undefined;
+  
   const {
     questions,
     currentQuestion,
@@ -88,8 +105,8 @@ const MCQTest: React.FC = () => {
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-              <p className="text-gray-400 text-center">Company: {location.state?.companyName}</p>
-              <p className="text-gray-400 text-center">Position: {location.state?.jobTitle}</p>
+              <p className="text-gray-400 text-center">Company: {locationState?.companyName}</p>
+              <p className="text-gray-400 text-center">Position: {locationState?.jobTitle}</p>
             </div>
 
             <MCQQuestionDisplay
