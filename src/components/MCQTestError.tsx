@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, RefreshCcw } from "lucide-react";
+import { ArrowLeft, RefreshCcw, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface MCQTestErrorProps {
@@ -42,6 +42,12 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
           </AlertDescription>
         </Alert>
         <div className="text-center mt-8 space-y-4">
+          {isApiKeyError && (
+            <Button onClick={() => navigate('/start-practice')} size="lg" className="mr-4">
+              <Key className="mr-2 h-4 w-4" />
+              Update API Key
+            </Button>
+          )}
           <Button onClick={handleRetry} size="lg" className="mr-4">
             <RefreshCcw className="mr-2 h-4 w-4" />
             Try Again
