@@ -21,11 +21,22 @@ export function useCompanyValidation() {
     setValidationError(null);
 
     try {
+      console.log('Validating company:', companyName);
+      
       const { data, error } = await supabase.functions.invoke('validate-company', {
         body: { companyName }
       });
+      
+      console.log('Validation response:', data, error);
 
-      if (error || !data.valid) {
+      if (error) {
+        console.error('Supabase function error:', error);
+        setValidationError('An error occurred while validating the company');
+        setCompanyData(null);
+        return false;
+      }
+
+      if (!data.valid) {
         setValidationError(data?.error || 'Unable to verify company');
         setCompanyData(null);
         return false;
@@ -34,6 +45,7 @@ export function useCompanyValidation() {
       setCompanyData(data.company);
       return true;
     } catch (error) {
+      console.error('Validation error:', error);
       setValidationError('An error occurred while validating the company');
       setCompanyData(null);
       return false;
