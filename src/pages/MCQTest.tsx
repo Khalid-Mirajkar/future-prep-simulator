@@ -22,7 +22,10 @@ const MCQTest = () => {
   const [showResults, setShowResults] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [questionSeed, setQuestionSeed] = useState(() => Math.floor(Math.random() * 1000000));
+  // More unique seed generation with timestamp and random component
+  const [questionSeed, setQuestionSeed] = useState(() => 
+    Math.floor(Math.random() * 1000000) + Date.now() % 10000
+  );
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -56,14 +59,14 @@ const MCQTest = () => {
           throw new Error('Received invalid question data');
         }
         
-        // Verify all questions have at least 2 options
+        // Verify all questions have exactly 4 options
         const validatedData = data.map(question => {
-          if (!question.options || question.options.length < 2) {
-            console.warn('Question with insufficient options found, fixing:', question);
+          if (!question.options || question.options.length !== 4) {
+            console.warn('Question with incorrect number of options found, fixing:', question);
             return {
               ...question,
               options: question.options?.length ? 
-                [...question.options, "Option 2", "Option 3", "Option 4"].slice(0, 4) : 
+                [...question.options].concat(["Option 2", "Option 3", "Option 4"]).slice(0, 4) : 
                 ["Option 1", "Option 2", "Option 3", "Option 4"]
             };
           }
@@ -126,8 +129,8 @@ const MCQTest = () => {
     setSelectedAnswers({});
     setShowResults(false);
     setTestResult(null);
-    setRetryCount(prev => prev + 1);
-    setQuestionSeed(Math.floor(Math.random() * 1000000)); // Generate new seed for different questions
+    // Generate a completely new seed combining timestamp and random value
+    setQuestionSeed(Math.floor(Math.random() * 1000000) + Date.now() % 10000);
     setIsLoading(true);
   };
 

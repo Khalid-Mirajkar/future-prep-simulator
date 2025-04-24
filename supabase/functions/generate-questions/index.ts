@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
@@ -10,6 +9,9 @@ const corsHeaders = {
 // Generate mock questions with enhanced relevance based on job categories
 const generateMockQuestions = (companyName: string, jobTitle: string, seed = Date.now()) => {
   console.log('Using mock questions for:', companyName, jobTitle, 'with seed:', seed);
+  
+  // Use seed for pseudo-random number generation
+  const seededRandom = createSeededRandom(seed);
   
   // Identify job category for more relevant questions
   const jobTitleLower = jobTitle.toLowerCase();
@@ -41,119 +43,134 @@ const generateMockQuestions = (companyName: string, jobTitle: string, seed = Dat
     jobTitleLower.includes('lead') || 
     jobTitleLower.includes('chief');
 
-  // Common questions for all roles
+  // Common questions for all roles - extended pool
   const commonQuestions = [
     {
-      id: 1,
       question: `Which of the following best describes ${companyName}'s primary business?`,
       options: getCompanySpecificOptions(companyName),
-      correctAnswer: 0,
       explanation: `Understanding ${companyName}'s business is fundamental for any role within the company.`
     },
     {
-      id: 2,
       question: `What would you consider the most important quality for someone working at ${companyName}?`,
       options: ["Customer focus", "Attention to detail", "Teamwork", "Innovation"],
-      correctAnswer: 0,
       explanation: "Most successful companies prioritize customer focus as their primary value."
     },
+    {
+      question: `Which of these values is most emphasized at companies like ${companyName}?`,
+      options: ["Customer satisfaction", "Profit maximization", "Employee comfort", "Minimal training"],
+      explanation: "Customer satisfaction is the cornerstone of successful service businesses."
+    },
+    {
+      question: `During an interview at ${companyName}, how should you primarily present yourself?`,
+      options: ["As customer-oriented and reliable", "As independent and innovative", "As technical and analytical", "As strongly opinionated"],
+      explanation: "Service roles require customer orientation and reliability above all else."
+    },
+    {
+      question: `Which type of experience would be most valuable for a role at ${companyName}?`,
+      options: ["Previous customer-facing roles", "Advanced technical degrees", "Solo project work", "Theoretical knowledge"],
+      explanation: "Practical experience in customer-facing positions demonstrates required skills for service roles."
+    }
   ];
 
-  // Customer service specific questions
+  // Customer service specific questions - extended pool
   const customerServiceQuestions = [
     {
-      id: 3,
       question: `A customer at ${companyName} is upset because their order is incorrect. What's the best first step?`,
       options: ["Apologize and listen to their concern", "Call the manager immediately", "Tell them mistakes happen", "Suggest they place a new order"],
-      correctAnswer: 0,
       explanation: "The first step in handling customer complaints is to acknowledge their concerns and listen actively."
     },
     {
-      id: 4,
       question: `Which approach is most effective when handling a long queue of customers at ${companyName}?`,
       options: ["Acknowledge the wait and work efficiently", "Rush through each customer interaction", "Take your normal pace", "Ask customers to return later"],
-      correctAnswer: 0,
       explanation: "Acknowledging the wait shows respect while maintaining efficiency helps reduce the queue."
     },
     {
-      id: 5,
       question: "What's the best way to handle a situation where you don't know the answer to a customer's question?",
       options: ["Say you'll find out and get back to them", "Make your best guess", "Tell them you don't know", "Change the subject"],
-      correctAnswer: 0,
       explanation: "It's best to be honest about not knowing, while showing commitment to finding the right answer."
     },
     {
-      id: 6,
       question: `Which of these is NOT typically an acceptable policy for handling refunds at companies like ${companyName}?`,
       options: ["Making exceptions without manager approval", "Requiring a receipt", "Following company guidelines", "Explaining the refund policy"],
-      correctAnswer: 0,
       explanation: "Following established protocols for refunds is important for consistency and financial accountability."
     },
     {
-      id: 7,
       question: `A colleague at ${companyName} is being rude to a customer. What should you do?`,
       options: ["Politely intervene and help the customer", "Ignore it as it's not your problem", "Join in to support your colleague", "Leave the area immediately"],
-      correctAnswer: 0,
       explanation: "Customer service requires teamwork to ensure all customers are treated respectfully."
     },
     {
-      id: 8,
       question: "Which communication style is most effective when explaining menu options to a customer?",
       options: ["Clear, friendly and patient", "Technical and detailed", "Quick and minimal", "Formal and businesslike"],
-      correctAnswer: 0,
       explanation: "Clear, friendly communication ensures customers understand their options and feel valued."
     },
     {
-      id: 9,
       question: `What's the most important information to verify when taking a food order at ${companyName}?`,
       options: ["Order accuracy and any special requests", "Customer's name and contact details", "How they heard about the business", "Their past ordering history"],
-      correctAnswer: 0,
       explanation: "Order accuracy is crucial to customer satisfaction and efficient service."
     },
     {
-      id: 10,
       question: "Which of the following would be most appropriate when a customer complains about wait time?",
       options: ["Apologize and explain the current situation", "Tell them other customers are waiting too", "Suggest they order something simpler", "Ignore the complaint"],
-      correctAnswer: 0,
       explanation: "Acknowledging the issue with an explanation shows respect while managing expectations."
+    },
+    {
+      question: "How should you respond to a customer who is speaking rudely to you?",
+      options: ["Remain calm and professional", "Match their tone to show confidence", "Walk away from the situation", "Call security immediately"],
+      explanation: "Maintaining professionalism during difficult interactions is key to de-escalation."
+    },
+    {
+      question: `What's the most important safety practice for food handlers at ${companyName}?`,
+      options: ["Proper handwashing", "Working quickly", "Keeping conversations minimal", "Focusing only on cleanliness"],
+      explanation: "Handwashing prevents contamination and is the foundation of food safety practices."
+    },
+    {
+      question: "Which approach is best when training new employees?",
+      options: ["Patient explanation with demonstration", "Providing written materials only", "Letting them learn by making mistakes", "Minimal interaction"],
+      explanation: "Combining explanation with demonstration provides the most effective learning experience."
+    },
+    {
+      question: "What is the appropriate way to handle cash transactions?",
+      options: ["Count money carefully in front of the customer", "Count quickly to save time", "Count only after the customer leaves", "Trust the customer's count"],
+      explanation: "Counting money in front of customers ensures transparency and minimizes errors."
+    },
+    {
+      question: "How can you best assist customers with dietary restrictions?",
+      options: ["Know ingredient information and available substitutions", "Tell them to check online", "Suggest they order something else", "Ask them to speak to the chef"],
+      explanation: "Having knowledge of ingredients helps provide safe and satisfactory service to all customers."
+    },
+    {
+      question: "When is it appropriate to offer additional menu items to a customer?",
+      options: ["After they've made their primary selection", "Before they've decided", "When they're paying", "If they look indecisive"],
+      explanation: "Suggesting additional items after the main selection avoids confusion and enhances the customer experience."
     }
   ];
 
   // Technical specific questions
   const technicalQuestions = [
     {
-      id: 3,
       question: "Which design pattern would be most appropriate for implementing a notification system?",
       options: ["Observer", "Singleton", "Factory", "Decorator"],
-      correctAnswer: 0,
       explanation: "The Observer pattern is ideal for implementing notification systems where multiple objects need to be notified of state changes."
     },
     {
-      id: 4,
       question: "What is the most efficient data structure for implementing a cache?",
       options: ["Hash Map", "Linked List", "Array", "Binary Tree"],
-      correctAnswer: 0,
       explanation: "Hash Maps provide O(1) average time complexity for lookups, making them ideal for cache implementations."
     },
     {
-      id: 5,
       question: "Which testing approach should be prioritized in a CI/CD pipeline?",
       options: ["Unit Testing", "Manual Testing", "End-to-End Testing", "Stress Testing"],
-      correctAnswer: 0,
       explanation: "Unit tests are fundamental to CI/CD pipelines as they provide fast feedback and catch issues early."
     },
     {
-      id: 6,
       question: "What is the recommended approach for handling asynchronous operations in modern web applications?",
       options: ["Async/Await", "Callbacks", "Plain Promises", "setTimeout"],
-      correctAnswer: 0,
       explanation: "Async/await provides cleaner, more readable code for handling asynchronous operations compared to callbacks or plain promises."
     },
     {
-      id: 7,
       question: "Which security practice is most critical for protecting user data?",
       options: ["Input Validation", "Basic Authentication", "Console Logging", "Client-side Encryption"],
-      correctAnswer: 0,
       explanation: "Input validation is the first line of defense against many common security vulnerabilities like SQL injection and XSS attacks."
     }
   ];
@@ -161,38 +178,28 @@ const generateMockQuestions = (companyName: string, jobTitle: string, seed = Dat
   // Management specific questions
   const managementQuestions = [
     {
-      id: 3,
       question: `When leading a team at ${companyName}, what's the most effective approach for introducing a new process?`,
       options: ["Explain the benefits and provide training", "Send an email with the new guidelines", "Implement immediately", "Let team members figure it out"],
-      correctAnswer: 0,
       explanation: "Change management is most effective when benefits are clear and proper training is provided."
     },
     {
-      id: 4,
       question: `How should a ${jobTitle} at ${companyName} best handle conflict between team members?`,
       options: ["Meet privately with each person to understand perspectives", "Ignore it unless performance suffers", "Take sides with who you think is right", "Address it in a team meeting"],
-      correctAnswer: 0,
       explanation: "Private conversations allow for understanding different perspectives before attempting resolution."
     },
     {
-      id: 5,
       question: `What's the most important factor when scheduling staff at a busy ${companyName} location?`,
       options: ["Balance of skill levels across all shifts", "Staff preferences", "Minimizing labor costs", "Keeping the same teams together"],
-      correctAnswer: 0,
       explanation: "Ensuring each shift has the right mix of experience and skills helps maintain service quality."
     },
     {
-      id: 6,
       question: "Which approach to employee feedback is most effective for improving performance?",
       options: ["Regular, specific and balanced feedback", "Annual formal reviews", "Addressing issues as they become serious", "Focusing primarily on areas for improvement"],
-      correctAnswer: 0,
       explanation: "Regular and specific feedback that includes both strengths and development areas helps employees grow."
     },
     {
-      id: 7,
       question: `What's the best way to handle a situation where ${companyName} is understaffed during a busy period?`,
       options: ["Prioritize critical tasks and communicate with customers", "Call employees who are off-duty", "Focus only on the fastest transactions", "Turn away excess customers"],
-      correctAnswer: 0,
       explanation: "Prioritization and transparent communication help manage customer expectations when resources are limited."
     }
   ];
@@ -210,19 +217,6 @@ const generateMockQuestions = (companyName: string, jobTitle: string, seed = Dat
     jobSpecificQuestions = customerServiceQuestions.slice(0, 5);
   }
 
-  // Randomly select and shuffle questions to ensure variety
-  const shuffleArray = (array: any[], seedValue = seed) => {
-    // Create a seeded random function
-    const seededRandom = createSeededRandom(seedValue);
-    
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
-
   // Seeded random number generator
   function createSeededRandom(seed: number) {
     return function() {
@@ -231,9 +225,47 @@ const generateMockQuestions = (companyName: string, jobTitle: string, seed = Dat
     };
   }
 
-  // Combine and select questions
-  const allQuestions = [...commonQuestions, ...shuffleArray(jobSpecificQuestions)];
-  return shuffleArray(allQuestions).slice(0, 7);
+  // Shuffle array using seeded random function
+  const shuffleArray = (array: any[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Randomize the correct answer for each question
+  const randomizeCorrectAnswer = (question: any) => {
+    const options = [...question.options];
+    const correctAnswer = Math.floor(seededRandom() * 4); // Random index between 0-3
+    const correctOption = options[0]; // The first option was originally the correct one
+    
+    // Swap the correct answer to the random position
+    options[0] = options[correctAnswer];
+    options[correctAnswer] = correctOption;
+    
+    return {
+      ...question,
+      options: options,
+      correctAnswer: correctAnswer
+    };
+  };
+
+  // Combine, randomize correct answers, and select questions
+  const allQuestionsPool = [...commonQuestions, ...shuffleArray(jobSpecificQuestions)];
+  const shuffledPool = shuffleArray(allQuestionsPool);
+  
+  // Select questions and add IDs
+  const selectedQuestions = shuffledPool.slice(0, 7).map((q, index) => {
+    const questionWithRandomAnswer = randomizeCorrectAnswer(q);
+    return {
+      id: index + 1,
+      ...questionWithRandomAnswer
+    };
+  });
+  
+  return selectedQuestions;
 };
 
 // Helper function to generate company-specific options for the first question
@@ -260,6 +292,15 @@ function getCompanySpecificOptions(companyName: string): string[] {
   }
   else if (companyLower.includes('netflix')) {
     return ["Streaming entertainment service", "Fast food restaurant", "Retail store", "Financial institution"];
+  }
+  else if (companyLower.includes('starbucks')) {
+    return ["Coffee shop chain", "Fast food restaurant", "Grocery store", "Tech company"];
+  }
+  else if (companyLower.includes('target')) {
+    return ["Retail store", "Online marketplace", "Restaurant chain", "Automotive service"];
+  }
+  else if (companyLower.includes('subway')) {
+    return ["Fast food sandwich restaurant", "Public transportation", "Electronics retailer", "Clothing brand"];
   }
   // Default options for any other company
   return ["Customer service", "Software development", "Financial services", "Manufacturing"];
