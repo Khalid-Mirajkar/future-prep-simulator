@@ -16,8 +16,9 @@ import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useCompanyValidation } from "@/hooks/useCompanyValidation"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useEffect } from "react"
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -29,7 +30,7 @@ const formSchema = z.object({
 
 const StartPractice = () => {
   const navigate = useNavigate()
-  const { validateCompany, isValidating, validationError, companyData } = useCompanyValidation()
+  const { validateCompany, clearValidation, isValidating, validationError, companyData } = useCompanyValidation()
   const { toast } = useToast()
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -38,6 +39,13 @@ const StartPractice = () => {
       testType: "mcq",
     },
   })
+
+  // Clear validation when form is reset
+  useEffect(() => {
+    return () => {
+      clearValidation();
+    };
+  }, []);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const isValid = await validateCompany(values.companyName)
@@ -64,6 +72,14 @@ const StartPractice = () => {
     }
   }
 
+  // Function to validate company on blur
+  const handleBlur = async () => {
+    const companyName = form.getValues("companyName");
+    if (companyName && companyName.length >= 2) {
+      await validateCompany(companyName);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
       <div className="container mx-auto px-6">
@@ -79,37 +95,45 @@ const StartPractice = () => {
                   <FormItem>
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Enter company name" 
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e)
-                          if (validationError) {
-                            validateCompany(e.target.value)
-                          }
-                        }}
-                      />
+                      <div className="relative">
+                        <Input 
+                          placeholder="Enter company name" 
+                          {...field}
+                          onBlur={handleBlur}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (companyData) {
+                              clearValidation();
+                            }
+                          }}
+                        />
+                        {companyData && !isValidating && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
                     <FormMessage />
                     {isValidating && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Validating company...
                       </div>
                     )}
                     {validationError && (
-                      <Alert variant="destructive">
+                      <Alert variant="destructive" className="mt-2">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{validationError}</AlertDescription>
                       </Alert>
                     )}
                     {companyData && (
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-2 bg-green-900/20 p-2 rounded-md border border-green-700/30">
                         {companyData.logo && (
                           <img src={companyData.logo} alt={companyData.name} className="h-6 w-6" />
                         )}
-                        <span className="text-sm text-green-500">Verified company</span>
+                        <span className="text-sm text-green-500">Verified: {companyData.name}</span>
                       </div>
                     )}
                   </FormItem>

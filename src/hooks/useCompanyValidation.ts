@@ -27,6 +27,7 @@ export function useCompanyValidation() {
 
       if (error || !data.valid) {
         setValidationError(data?.error || 'Unable to verify company');
+        setCompanyData(null);
         return false;
       }
 
@@ -34,14 +35,21 @@ export function useCompanyValidation() {
       return true;
     } catch (error) {
       setValidationError('An error occurred while validating the company');
+      setCompanyData(null);
       return false;
     } finally {
       setIsValidating(false);
     }
   };
 
+  const clearValidation = () => {
+    setValidationError(null);
+    setCompanyData(null);
+  };
+
   return {
     validateCompany,
+    clearValidation,
     isValidating,
     validationError,
     companyData,
