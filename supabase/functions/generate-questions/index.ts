@@ -7,60 +7,78 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Mock data to use when no OpenAI API key is available
-const generateMockQuestions = (companyName, jobTitle) => {
+// Generate mock questions with enhanced relevance
+const generateMockQuestions = (companyName: string, jobTitle: string) => {
   console.log('Using mock questions for:', companyName, jobTitle);
-  return [
+  
+  const commonQuestions = [
     {
       id: 1,
-      question: `What programming language is most commonly used for frontend development at ${companyName}?`,
-      options: ["JavaScript/TypeScript", "C++", "Ruby", "Swift"],
+      question: `Which software development methodology is most commonly used at ${companyName}?`,
+      options: ["Agile/Scrum", "Waterfall", "Spiral", "Big Bang"],
       correctAnswer: 0,
-      explanation: "JavaScript and TypeScript are the primary languages used for frontend web development across most tech companies."
+      explanation: "Most modern tech companies, including " + companyName + ", use Agile methodologies for their flexibility and iterative approach."
     },
     {
       id: 2,
-      question: `Which version control system is likely used at ${companyName}?`,
-      options: ["Git", "SVN", "Mercurial", "CVS"],
+      question: `For a ${jobTitle} position at ${companyName}, which soft skill is typically most valued?`,
+      options: ["Communication", "Time Management", "Leadership", "Creativity"],
       correctAnswer: 0,
-      explanation: "Git is the industry standard version control system used by most technology companies today."
+      explanation: "Strong communication skills are essential for collaboration in modern development teams."
     },
+    // ... more questions specific to the role and company
+  ];
+
+  const technicalQuestions = [
     {
       id: 3,
-      question: `For a ${jobTitle} role, which of these is typically NOT part of the job responsibilities?`,
-      options: ["Writing code", "Participating in code reviews", "Managing the company's finances", "Debugging issues"],
-      correctAnswer: 2,
-      explanation: "Managing company finances is typically handled by finance departments, not by engineering roles."
+      question: "Which design pattern would be most appropriate for implementing a notification system?",
+      options: ["Observer", "Singleton", "Factory", "Decorator"],
+      correctAnswer: 0,
+      explanation: "The Observer pattern is ideal for implementing notification systems where multiple objects need to be notified of state changes."
     },
     {
       id: 4,
-      question: `Which data structure would be most efficient for implementing a cache in a ${jobTitle} role?`,
-      options: ["Hash Map", "Linked List", "Stack", "Bubble Sort"],
+      question: "What is the most efficient data structure for implementing a cache?",
+      options: ["Hash Map", "Linked List", "Array", "Binary Tree"],
       correctAnswer: 0,
-      explanation: "Hash Maps provide O(1) average case lookup time, making them ideal for cache implementations."
+      explanation: "Hash Maps provide O(1) average time complexity for lookups, making them ideal for cache implementations."
     },
     {
       id: 5,
-      question: `What methodology is commonly used for software development in companies like ${companyName}?`,
-      options: ["Agile", "Waterfall", "Random Development", "No methodology"],
+      question: "Which testing approach should be prioritized in a CI/CD pipeline?",
+      options: ["Unit Testing", "Manual Testing", "End-to-End Testing", "Stress Testing"],
       correctAnswer: 0,
-      explanation: "Agile methodologies are widely adopted in modern software development for their flexibility and efficiency."
+      explanation: "Unit tests are fundamental to CI/CD pipelines as they provide fast feedback and catch issues early."
     },
     {
       id: 6,
-      question: `Which of the following is a key responsibility for a ${jobTitle}?`,
-      options: ["Writing maintainable code", "Designing marketing campaigns", "Managing HR operations", "Preparing financial reports"],
+      question: "What is the recommended approach for handling asynchronous operations in modern web applications?",
+      options: ["Async/Await", "Callbacks", "Plain Promises", "setTimeout"],
       correctAnswer: 0,
-      explanation: "Writing maintainable code is a core responsibility for most software engineering positions."
+      explanation: "Async/await provides cleaner, more readable code for handling asynchronous operations compared to callbacks or plain promises."
     },
     {
       id: 7,
-      question: `Which testing methodology would likely be employed for a critical application at ${companyName}?`,
-      options: ["Unit Testing", "No Testing", "Manual Testing Only", "Testing in Production"],
+      question: "Which security practice is most critical for protecting user data?",
+      options: ["Input Validation", "Basic Authentication", "Console Logging", "Client-side Encryption"],
       correctAnswer: 0,
-      explanation: "Unit testing is essential for ensuring code quality and preventing regressions in critical applications."
+      explanation: "Input validation is the first line of defense against many common security vulnerabilities like SQL injection and XSS attacks."
     }
   ];
+
+  // Randomly select and shuffle questions to ensure variety
+  const shuffleArray = (array: any[]) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const allQuestions = [...commonQuestions, ...technicalQuestions];
+  return shuffleArray(allQuestions).slice(0, 7);
 };
 
 serve(async (req) => {
@@ -75,7 +93,7 @@ serve(async (req) => {
     console.log('Generating questions for:', { companyName, jobTitle });
     console.log('OpenAI API Key available:', !!openAIApiKey);
 
-    // If no API key is set, use mock data
+    // If no API key is set, use enhanced mock data
     if (!openAIApiKey) {
       console.log('No OpenAI API key found, using mock questions');
       const mockQuestions = generateMockQuestions(companyName, jobTitle);

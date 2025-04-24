@@ -1,10 +1,9 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { MCQQuestion, TestResult } from "@/types/mcq";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw, ArrowLeft } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -99,6 +98,16 @@ const MCQTest = () => {
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
+  };
+
+  const handleRestartTest = () => {
+    setQuestions([]);
+    setCurrentQuestion(0);
+    setSelectedAnswers({});
+    setShowResults(false);
+    setTestResult(null);
+    setRetryCount(prev => prev + 1);
+    setIsLoading(true);
   };
 
   if (isLoading) {
@@ -197,12 +206,24 @@ const MCQTest = () => {
               </div>
             )}
 
-            <Button 
-              onClick={() => navigate('/start-practice')} 
-              className="w-full mt-8"
-            >
-              Take Another Test
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+              <Button 
+                onClick={handleRestartTest} 
+                className="flex-1"
+                variant="default"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Restart Test (New Questions)
+              </Button>
+              <Button 
+                onClick={() => navigate('/start-practice')} 
+                className="flex-1"
+                variant="outline"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Take Another Test
+              </Button>
+            </div>
           </div>
         </div>
       </div>
