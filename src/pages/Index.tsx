@@ -50,7 +50,20 @@ const Index = () => {
         isScrolled ? 'backdrop-blur-md bg-black/70 shadow-md' : 'bg-transparent'
       }`}>
         <div className="container mx-auto px-6 py-4">
-          <div className="text-xl font-bold text-white">AI INTERVIEW</div>
+          <div className="flex justify-between items-center">
+            <div className="text-xl font-bold text-white">AI INTERVIEW</div>
+            <nav>
+              <ul className="flex space-x-6">
+                {['About', 'Contact', 'Privacy', 'Terms'].map((item) => (
+                  <li key={item}>
+                    <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">
+                      {item}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
         </div>
       </header>
       
