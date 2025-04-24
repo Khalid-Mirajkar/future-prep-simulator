@@ -1,43 +1,44 @@
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-interface MCQQuestion {
-  id: number;
-  question: string;
-  options: string[];
-}
-
-const dummyQuestions: MCQQuestion[] = [
-  {
-    id: 1,
-    question: "What is the primary responsibility of a software engineer?",
-    options: [
-      "Writing clean, efficient code",
-      "Managing team meetings",
-      "Creating marketing materials",
-      "Customer support",
-    ],
-  },
-  {
-    id: 2,
-    question: "Which version control system is most commonly used in modern software development?",
-    options: [
-      "Git",
-      "SVN",
-      "Mercurial",
-      "CVS",
-    ],
-  },
-];
+import { useState, useEffect } from "react";
+import { MCQQuestion, TestResult } from "@/types/mcq";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const MCQTest = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { companyName, jobTitle } = location.state || {};
+  
+  const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-questions', {
+          body: { companyName, jobTitle }
+        });
+
+        if (error) throw error;
+        setQuestions(data);
+      } catch (err) {
+        console.error('Error loading questions:', err);
+        setError('Failed to load questions. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, [companyName, jobTitle]);
 
   const handleOptionSelect = (questionId: number, optionIndex: number) => {
     setSelectedAnswers(prev => ({
@@ -46,13 +47,102 @@ const MCQTest = () => {
     }));
   };
 
-  const handleNext = () => {
-    if (currentQuestion < dummyQuestions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    } else {
-      navigate("/results");
-    }
+  const evaluateTest = () => {
+    const incorrect = questions.filter(
+      (q) => selectedAnswers[q.id] !== q.correctAnswer
+    ).map(q => ({
+      questionId: q.id,
+      question: q.question,
+      userAnswer: q.options[selectedAnswers[q.id]],
+      correctAnswer: q.options[q.correctAnswer],
+      explanation: q.explanation || ''
+    }));
+
+    const score = questions.length - incorrect.length;
+
+    setTestResult({
+      score,
+      totalQuestions: questions.length,
+      incorrectAnswers: incorrect
+    });
+    setShowResults(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20 flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Generating questions...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+        <div className="container mx-auto px-6">
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={() => navigate('/start-practice')} className="mt-4">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showResults && testResult) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+        <div className="container mx-auto px-6">
+          <h1 className="text-4xl font-bold mb-8 text-center">Test Results</h1>
+          
+          <div className="max-w-2xl mx-auto glass-card p-8 rounded-xl">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">
+                Score: {testResult.score}/{testResult.totalQuestions}
+              </h2>
+              <div className="h-2 bg-gray-700 rounded-full mb-4">
+                <div 
+                  className="h-full bg-green-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(testResult.score / testResult.totalQuestions) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {testResult.incorrectAnswers.length > 0 ? (
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold mb-4">Areas for Improvement</h3>
+                {testResult.incorrectAnswers.map((answer, index) => (
+                  <div key={index} className="p-4 bg-gray-800/50 rounded-lg">
+                    <p className="font-medium mb-2">{answer.question}</p>
+                    <p className="text-red-400 mb-1">Your answer: {answer.userAnswer}</p>
+                    <p className="text-green-400 mb-2">Correct answer: {answer.correctAnswer}</p>
+                    <p className="text-gray-400 text-sm">{answer.explanation}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-green-400">
+                Perfect score! You answered all questions correctly.
+              </div>
+            )}
+
+            <Button 
+              onClick={() => navigate('/start-practice')} 
+              className="w-full mt-8"
+            >
+              Take Another Test
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
@@ -67,20 +157,20 @@ const MCQTest = () => {
 
           <div className="mb-6">
             <p className="text-lg font-medium mb-4">
-              Question {currentQuestion + 1} of {dummyQuestions.length}
+              Question {currentQuestion + 1} of {questions.length}
             </p>
-            <p className="text-xl mb-6">{dummyQuestions[currentQuestion].question}</p>
+            <p className="text-xl mb-6">{questions[currentQuestion]?.question}</p>
 
             <div className="space-y-4">
-              {dummyQuestions[currentQuestion].options.map((option, index) => (
+              {questions[currentQuestion]?.options.map((option, index) => (
                 <div
                   key={index}
                   className={`p-4 rounded-lg cursor-pointer transition-all ${
-                    selectedAnswers[dummyQuestions[currentQuestion].id] === index
+                    selectedAnswers[questions[currentQuestion].id] === index
                       ? "bg-deep-purple text-white"
                       : "bg-gray-800 hover:bg-gray-700"
                   }`}
-                  onClick={() => handleOptionSelect(dummyQuestions[currentQuestion].id, index)}
+                  onClick={() => handleOptionSelect(questions[currentQuestion].id, index)}
                 >
                   {option}
                 </div>
@@ -88,13 +178,34 @@ const MCQTest = () => {
             </div>
           </div>
 
-          <Button
-            onClick={handleNext}
-            className="w-full"
-            disabled={selectedAnswers[dummyQuestions[currentQuestion].id] === undefined}
-          >
-            {currentQuestion < dummyQuestions.length - 1 ? "Next Question" : "Finish Test"}
-          </Button>
+          <div className="flex justify-between gap-4">
+            <Button
+              onClick={() => setCurrentQuestion(prev => prev - 1)}
+              disabled={currentQuestion === 0}
+              variant="outline"
+              className="w-1/2"
+            >
+              Previous
+            </Button>
+            
+            {currentQuestion < questions.length - 1 ? (
+              <Button
+                onClick={() => setCurrentQuestion(prev => prev + 1)}
+                disabled={selectedAnswers[questions[currentQuestion]?.id] === undefined}
+                className="w-1/2"
+              >
+                Next Question
+              </Button>
+            ) : (
+              <Button
+                onClick={evaluateTest}
+                disabled={Object.keys(selectedAnswers).length !== questions.length}
+                className="w-1/2"
+              >
+                Submit Test
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
