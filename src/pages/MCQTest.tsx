@@ -1,4 +1,3 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -6,11 +5,13 @@ import { MCQQuestion, TestResult } from "@/types/mcq";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 
 const MCQTest = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { companyName, jobTitle } = location.state || {};
+  const { toast } = useToast();
   
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -21,24 +22,50 @@ const MCQTest = () => {
   const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
+    if (!companyName || !jobTitle) {
+      setError("Missing company name or job title. Please return to the start page.");
+      setIsLoading(false);
+      return;
+    }
+
     const loadQuestions = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log('Calling generate-questions with:', { companyName, jobTitle });
+        
         const { data, error } = await supabase.functions.invoke('generate-questions', {
           body: { companyName, jobTitle }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error calling generate-questions function:', error);
+          throw new Error(error.message || 'Failed to load questions');
+        }
+
+        if (!data || !Array.isArray(data)) {
+          console.error('Invalid response format:', data);
+          throw new Error('Received invalid question data');
+        }
+
+        console.log('Successfully loaded questions:', data.length);
         setQuestions(data);
       } catch (err) {
         console.error('Error loading questions:', err);
         setError('Failed to load questions. Please try again.');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load interview questions. Please try again later."
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     loadQuestions();
-  }, [companyName, jobTitle]);
+  }, [companyName, jobTitle, toast]);
 
   const handleOptionSelect = (questionId: number, optionIndex: number) => {
     setSelectedAnswers(prev => ({
@@ -71,9 +98,12 @@ const MCQTest = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0D0D0D] text-white py-20 flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Generating questions...</span>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-purple-500" />
+          <div className="text-center">
+            <p className="text-xl font-medium">Generating questions...</p>
+            <p className="text-sm text-gray-400 mt-2">This may take a few moments</p>
+          </div>
         </div>
       </div>
     );
@@ -82,14 +112,16 @@ const MCQTest = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
-        <div className="container mx-auto px-6">
-          <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+        <div className="container mx-auto px-6 max-w-2xl">
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle className="text-lg">Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-          <Button onClick={() => navigate('/start-practice')} className="mt-4">
-            Try Again
-          </Button>
+          <div className="text-center mt-8">
+            <Button onClick={() => navigate('/start-practice')} size="lg">
+              Try Again
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -137,6 +169,27 @@ const MCQTest = () => {
               className="w-full mt-8"
             >
               Take Another Test
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+        <div className="container mx-auto px-6 max-w-2xl">
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle className="text-lg">No Questions Available</AlertTitle>
+            <AlertDescription>
+              We couldn't generate questions for this combination of company and job title.
+              Please try again with different inputs.
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-8">
+            <Button onClick={() => navigate('/start-practice')} size="lg">
+              Try Again
             </Button>
           </div>
         </div>

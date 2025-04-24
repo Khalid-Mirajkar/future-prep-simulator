@@ -16,6 +16,17 @@ serve(async (req) => {
     const { companyName, jobTitle } = await req.json()
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
 
+    if (!openAIApiKey) {
+      console.error('Error: OPENAI_API_KEY is not set')
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key is not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     console.log('Generating questions for:', { companyName, jobTitle })
 
     const prompt = `Generate 7 multiple-choice questions for a ${jobTitle} role at ${companyName}. 
@@ -52,14 +63,41 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('OpenAI API error:', errorData)
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`)
+    }
+
     const data = await response.json()
-    const questions = JSON.parse(data.choices[0].message.content)
+    
+    // Validate the response from OpenAI
+    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error('Unexpected OpenAI response format:', data)
+      throw new Error('Invalid response from OpenAI')
+    }
+    
+    // Parse the response content and validate it's a valid JSON array
+    let questions
+    try {
+      questions = JSON.parse(data.choices[0].message.content)
+      
+      if (!Array.isArray(questions) || questions.length === 0) {
+        console.error('OpenAI did not return a valid question array:', data.choices[0].message.content)
+        throw new Error('Invalid question format returned from OpenAI')
+      }
+    } catch (parseError) {
+      console.error('Failed to parse questions JSON:', parseError, data.choices[0].message.content)
+      throw new Error('Failed to parse questions from OpenAI response')
+    }
 
     // Add IDs to questions
-    const questionsWithIds = questions.map((q: any, index: number) => ({
+    const questionsWithIds = questions.map((q, index) => ({
       id: index + 1,
       ...q,
     }))
+
+    console.log('Successfully generated questions:', questionsWithIds.length)
 
     return new Response(JSON.stringify(questionsWithIds), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
