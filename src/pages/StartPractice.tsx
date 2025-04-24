@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { useCompanyValidation } from "@/hooks/useCompanyValidation"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, Loader2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -24,7 +28,10 @@ const formSchema = z.object({
 })
 
 const StartPractice = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { validateCompany, isValidating, validationError, companyData } = useCompanyValidation()
+  const { toast } = useToast()
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -32,11 +39,28 @@ const StartPractice = () => {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const isValid = await validateCompany(values.companyName)
+    
+    if (!isValid) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: validationError || "Please enter a valid company name",
+      })
+      return
+    }
+
     if (values.testType === "mcq") {
-      navigate("/mcq-test", { state: { companyName: values.companyName, jobTitle: values.jobTitle } });
+      navigate("/mcq-test", { 
+        state: { 
+          companyName: companyData?.name || values.companyName, 
+          jobTitle: values.jobTitle,
+          companyLogo: companyData?.logo,
+        } 
+      })
     } else {
-      navigate("/coming-soon");
+      navigate("/coming-soon")
     }
   }
 
@@ -55,9 +79,39 @@ const StartPractice = () => {
                   <FormItem>
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter company name" {...field} />
+                      <Input 
+                        placeholder="Enter company name" 
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e)
+                          if (validationError) {
+                            validateCompany(e.target.value)
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
+                    {isValidating && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Validating company...
+                      </div>
+                    )}
+                    {validationError && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{validationError}</AlertDescription>
+                      </Alert>
+                    )}
+                    {companyData && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {companyData.logo && (
+                          <img src={companyData.logo} alt={companyData.name} className="h-6 w-6" />
+                        )}
+                        <span className="text-sm text-green-500">Verified company</span>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />
@@ -119,15 +173,22 @@ const StartPractice = () => {
                 )}
               />
               
-              <Button type="submit" className="w-full">
-                Start Test
+              <Button type="submit" className="w-full" disabled={isValidating}>
+                {isValidating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Validating...
+                  </>
+                ) : (
+                  'Start Test'
+                )}
               </Button>
             </form>
           </Form>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default StartPractice;
