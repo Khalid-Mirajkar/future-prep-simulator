@@ -96,30 +96,33 @@ const ParticlesBackground = () => {
           particle.x, particle.y, particle.size * 3
         );
         
-        // Convert opacity to hex (0-255) and ensure it has 2 digits
-        const alpha = Math.floor(particle.opacity * 255)
-          .toString(16)
-          .padStart(2, '0');
-        
         if (particle.type === 'star') {
           // Enhanced twinkling effect for stars
           particle.opacity = 0.5 + Math.sin(Date.now() * 0.003 + particle.x) * 0.4;
-          particleGradient.addColorStop(0, particle.color + alpha);
+          
+          // Use rgba for proper color formatting
+          const color = hexToRgba(particle.color, particle.opacity);
+          particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         } else if (particle.type === 'planet') {
           // More distinct planet-like appearance
-          particleGradient.addColorStop(0, particle.color + alpha);
-          particleGradient.addColorStop(0.5, particle.color + '66');
+          const color = hexToRgba(particle.color, particle.opacity);
+          const midColor = hexToRgba(particle.color, 0.4); // Use 0.4 for mid opacity
+          
+          particleGradient.addColorStop(0, color);
+          particleGradient.addColorStop(0.5, midColor);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, Math.PI * 2);
         } else {
           // Cosmic dust with slight variation
-          particleGradient.addColorStop(0, particle.color + alpha);
+          const color = hexToRgba(particle.color, particle.opacity);
+          
+          particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
           ctx.fillStyle = particleGradient;
@@ -151,6 +154,20 @@ const ParticlesBackground = () => {
       }
       
       animationFrameId = requestAnimationFrame(drawParticles);
+    };
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex: string, opacity: number): string => {
+      // Remove # if present
+      hex = hex.replace('#', '');
+      
+      // Parse hex to RGB
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      // Return rgba string
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     };
     
     window.addEventListener('resize', resizeCanvas);
