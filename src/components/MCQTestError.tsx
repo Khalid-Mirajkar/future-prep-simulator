@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface MCQTestErrorProps {
@@ -12,6 +12,10 @@ interface MCQTestErrorProps {
 
 const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
   const navigate = useNavigate();
+  
+  // Detect specific error types
+  const isQuotaError = error.includes('quota');
+  const isApiKeyError = error.includes('API key');
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
@@ -20,11 +24,26 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
           <AlertTitle className="text-lg">Error</AlertTitle>
           <AlertDescription>
             {error}
-            <p className="mt-2 text-sm">This may be due to a missing OpenAI API key or connection issue.</p>
+            {isQuotaError && (
+              <p className="mt-2 text-sm">
+                The OpenAI API quota has been exceeded. Please try again later or use a different API key.
+              </p>
+            )}
+            {isApiKeyError && (
+              <p className="mt-2 text-sm">
+                Please ensure a valid OpenAI API key is configured in the Supabase Edge Function Secrets.
+              </p>
+            )}
+            {!isQuotaError && !isApiKeyError && (
+              <p className="mt-2 text-sm">
+                This may be due to a connection issue or server problem.
+              </p>
+            )}
           </AlertDescription>
         </Alert>
         <div className="text-center mt-8 space-y-4">
           <Button onClick={handleRetry} size="lg" className="mr-4">
+            <RefreshCcw className="mr-2 h-4 w-4" />
             Try Again
           </Button>
           <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">

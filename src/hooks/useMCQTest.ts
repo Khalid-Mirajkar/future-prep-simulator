@@ -47,7 +47,15 @@ export const useMCQTest = () => {
 
         if (error) {
           console.error('Error calling generate-questions function:', error);
-          throw new Error(error.message || 'Failed to load questions');
+          
+          // Check for specific error types
+          if (error.message && error.message.includes("quota")) {
+            throw new Error('OpenAI API quota exceeded. Please try again later or contact support.');
+          } else if (error.message && error.message.includes("API key")) {
+            throw new Error('Invalid or missing OpenAI API key. Please check the configuration.');
+          } else {
+            throw new Error(error.message || 'Failed to load questions');
+          }
         }
 
         if (!data || !Array.isArray(data)) {
@@ -77,11 +85,12 @@ export const useMCQTest = () => {
         setQuestions(validatedData);
       } catch (err) {
         console.error('Error loading questions:', err);
-        setError('Failed to load questions. Please try again.');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load questions. Please try again.';
+        setError(errorMessage);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load interview questions. Please try again later."
+          description: errorMessage
         });
       } finally {
         setIsLoading(false);
