@@ -1,13 +1,18 @@
-
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import FeatureCard from "@/components/FeatureCard";
 import TestimonialCarousel from "@/components/TestimonialCarousel";
 import ProcessSection from "@/components/ProcessSection";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +22,11 @@ const Index = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
 
   const features = [
     {
@@ -54,13 +64,32 @@ const Index = () => {
             <div className="text-xl font-bold text-white">AI INTERVIEW</div>
             <nav>
               <ul className="flex space-x-6">
-                {['About', 'Contact', 'Privacy', 'Terms'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">
-                      {item}
-                    </a>
+                <li>
+                  <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">
+                    About
+                  </a>
+                </li>
+                {user ? (
+                  <>
+                    <li>
+                      <button
+                        onClick={handleLogout}
+                        className="text-gray-400 text-sm hover:text-white transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </li>
+                  </>
+                ) : (
+                  <li>
+                    <button
+                      onClick={() => navigate('/auth')}
+                      className="text-gray-400 text-sm hover:text-white transition-colors"
+                    >
+                      Sign In / Sign Up
+                    </button>
                   </li>
-                ))}
+                )}
               </ul>
             </nav>
           </div>
