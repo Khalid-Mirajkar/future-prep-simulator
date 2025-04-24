@@ -7,6 +7,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Mock data to use when no OpenAI API key is available
+const generateMockQuestions = (companyName, jobTitle) => {
+  console.log('Using mock questions for:', companyName, jobTitle);
+  return [
+    {
+      id: 1,
+      question: `What programming language is most commonly used for frontend development at ${companyName}?`,
+      options: ["JavaScript/TypeScript", "C++", "Ruby", "Swift"],
+      correctAnswer: 0,
+      explanation: "JavaScript and TypeScript are the primary languages used for frontend web development across most tech companies."
+    },
+    {
+      id: 2,
+      question: `Which version control system is likely used at ${companyName}?`,
+      options: ["Git", "SVN", "Mercurial", "CVS"],
+      correctAnswer: 0,
+      explanation: "Git is the industry standard version control system used by most technology companies today."
+    },
+    {
+      id: 3,
+      question: `For a ${jobTitle} role, which of these is typically NOT part of the job responsibilities?`,
+      options: ["Writing code", "Participating in code reviews", "Managing the company's finances", "Debugging issues"],
+      correctAnswer: 2,
+      explanation: "Managing company finances is typically handled by finance departments, not by engineering roles."
+    },
+    {
+      id: 4,
+      question: `Which data structure would be most efficient for implementing a cache in a ${jobTitle} role?`,
+      options: ["Hash Map", "Linked List", "Stack", "Bubble Sort"],
+      correctAnswer: 0,
+      explanation: "Hash Maps provide O(1) average case lookup time, making them ideal for cache implementations."
+    },
+    {
+      id: 5,
+      question: `What methodology is commonly used for software development in companies like ${companyName}?`,
+      options: ["Agile", "Waterfall", "Random Development", "No methodology"],
+      correctAnswer: 0,
+      explanation: "Agile methodologies are widely adopted in modern software development for their flexibility and efficiency."
+    },
+    {
+      id: 6,
+      question: `Which of the following is a key responsibility for a ${jobTitle}?`,
+      options: ["Writing maintainable code", "Designing marketing campaigns", "Managing HR operations", "Preparing financial reports"],
+      correctAnswer: 0,
+      explanation: "Writing maintainable code is a core responsibility for most software engineering positions."
+    },
+    {
+      id: 7,
+      question: `Which testing methodology would likely be employed for a critical application at ${companyName}?`,
+      options: ["Unit Testing", "No Testing", "Manual Testing Only", "Testing in Production"],
+      correctAnswer: 0,
+      explanation: "Unit testing is essential for ensuring code quality and preventing regressions in critical applications."
+    }
+  ];
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -16,18 +72,17 @@ serve(async (req) => {
     const { companyName, jobTitle } = await req.json()
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
 
-    if (!openAIApiKey) {
-      console.error('Error: OPENAI_API_KEY is not set')
-      return new Response(
-        JSON.stringify({ error: 'OpenAI API key is not configured' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
+    console.log('Generating questions for:', { companyName, jobTitle });
+    console.log('OpenAI API Key available:', !!openAIApiKey);
 
-    console.log('Generating questions for:', { companyName, jobTitle })
+    // If no API key is set, use mock data
+    if (!openAIApiKey) {
+      console.log('No OpenAI API key found, using mock questions');
+      const mockQuestions = generateMockQuestions(companyName, jobTitle);
+      return new Response(JSON.stringify(mockQuestions), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const prompt = `Generate 7 multiple-choice questions for a ${jobTitle} role at ${companyName}. 
     Format the response as a JSON array with the following structure for each question:

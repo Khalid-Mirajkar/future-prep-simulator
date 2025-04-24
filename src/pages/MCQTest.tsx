@@ -1,3 +1,4 @@
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -20,6 +21,7 @@ const MCQTest = () => {
   const [error, setError] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -65,7 +67,7 @@ const MCQTest = () => {
     };
 
     loadQuestions();
-  }, [companyName, jobTitle, toast]);
+  }, [companyName, jobTitle, toast, retryCount]);
 
   const handleOptionSelect = (questionId: number, optionIndex: number) => {
     setSelectedAnswers(prev => ({
@@ -95,6 +97,10 @@ const MCQTest = () => {
     setShowResults(true);
   };
 
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0D0D0D] text-white py-20 flex items-center justify-center">
@@ -115,7 +121,34 @@ const MCQTest = () => {
         <div className="container mx-auto px-6 max-w-2xl">
           <Alert variant="destructive" className="mb-6">
             <AlertTitle className="text-lg">Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {error}
+              <p className="mt-2 text-sm">This may be due to a missing OpenAI API key or connection issue.</p>
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-8 space-y-4">
+            <Button onClick={handleRetry} size="lg" className="mr-4">
+              Try Again
+            </Button>
+            <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">
+              Back to Start
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+        <div className="container mx-auto px-6 max-w-2xl">
+          <Alert variant="destructive" className="mb-6">
+            <AlertTitle className="text-lg">No Questions Available</AlertTitle>
+            <AlertDescription>
+              We couldn't generate questions for this combination of company and job title.
+              Please try again with different inputs.
+            </AlertDescription>
           </Alert>
           <div className="text-center mt-8">
             <Button onClick={() => navigate('/start-practice')} size="lg">
@@ -169,27 +202,6 @@ const MCQTest = () => {
               className="w-full mt-8"
             >
               Take Another Test
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (questions.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
-        <div className="container mx-auto px-6 max-w-2xl">
-          <Alert variant="destructive" className="mb-6">
-            <AlertTitle className="text-lg">No Questions Available</AlertTitle>
-            <AlertDescription>
-              We couldn't generate questions for this combination of company and job title.
-              Please try again with different inputs.
-            </AlertDescription>
-          </Alert>
-          <div className="text-center mt-8">
-            <Button onClick={() => navigate('/start-practice')} size="lg">
-              Try Again
             </Button>
           </div>
         </div>
