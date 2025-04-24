@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.5"
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@4.12.1"
+import OpenAI from "https://esm.sh/openai@4.12.1"
 
 // CORS headers for browser access
 const corsHeaders = {
@@ -87,11 +87,19 @@ serve(async (req) => {
       );
     }
 
-    // Set up OpenAI configuration
-    const configuration = new Configuration({
-      apiKey: Deno.env.get("OPENAI_API_KEY"),
-    })
-    const openai = new OpenAIApi(configuration)
+    // Set up OpenAI client
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      console.error("Missing OpenAI API key");
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const openai = new OpenAI({
+      apiKey: openaiApiKey,
+    });
 
     // Categorize job for relevant question generation
     let jobCategory = "general";
@@ -157,84 +165,86 @@ serve(async (req) => {
     8. Seed: ${seed} (use this to generate different questions).
     `;
 
-    // Make the API call to OpenAI
-    const completion = await openai.createChatCompletion({
+    console.log("Calling OpenAI API with prompt");
+    
+    // Make the API call to OpenAI using the updated SDK format
+    const chatCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.7,
       messages: [
         { role: "system", content: "You are an expert job interview coach who creates realistic interview questions." },
         { role: "user", content: promptBase }
       ],
-    })
+    });
 
     // Extract content from the response
-    const content = completion.data.choices[0].message.content
+    const content = chatCompletion.choices[0].message.content;
     
     // Parse the JSON from the content
-    let questions = []
+    let questions = [];
     try {
       // Extract JSON from the content (it might be wrapped in markdown code blocks)
-      let jsonContent = content
+      let jsonContent = content || "";
       if (jsonContent.includes('```json')) {
-        jsonContent = jsonContent.split('```json')[1].split('```')[0].trim()
+        jsonContent = jsonContent.split('```json')[1].split('```')[0].trim();
       } else if (jsonContent.includes('```')) {
-        jsonContent = jsonContent.split('```')[1].split('```')[0].trim()
+        jsonContent = jsonContent.split('```')[1].split('```')[0].trim();
       }
       
-      questions = JSON.parse(jsonContent)
+      questions = JSON.parse(jsonContent);
       
       // Validate the questions format
       questions = questions.map((q, index) => {
         // Ensure each question has an ID
         if (!q.id) {
-          q.id = index + 1
+          q.id = index + 1;
         }
         
         // Ensure there are exactly 4 options
         if (!q.options || q.options.length !== 4) {
-          console.warn(`Question ${q.id} has ${q.options?.length || 0} options, fixing...`)
-          q.options = q.options || []
+          console.warn(`Question ${q.id} has ${q.options?.length || 0} options, fixing...`);
+          q.options = q.options || [];
           while (q.options.length < 4) {
-            q.options.push(`Option ${q.options.length + 1}`)
+            q.options.push(`Option ${q.options.length + 1}`);
           }
-          q.options = q.options.slice(0, 4)
+          q.options = q.options.slice(0, 4);
         }
         
         // Ensure there is a valid correct answer
         if (q.correctAnswer === undefined || q.correctAnswer === null || 
             q.correctAnswer < 0 || q.correctAnswer > 3) {
-          console.warn(`Question ${q.id} has invalid correctAnswer, fixing...`)
-          q.correctAnswer = Math.floor(Math.random() * 4) // Random index between 0-3
+          console.warn(`Question ${q.id} has invalid correctAnswer, fixing...`);
+          q.correctAnswer = Math.floor(Math.random() * 4); // Random index between 0-3
         }
         
         // Ensure there is an explanation
         if (!q.explanation) {
-          q.explanation = "This is the most appropriate answer for this situation."
+          q.explanation = "This is the most appropriate answer for this situation.";
         }
         
-        return q
-      })
+        return q;
+      });
       
-      console.log(`Successfully generated ${questions.length} questions`)
+      console.log(`Successfully generated ${questions.length} questions`);
     } catch (error) {
-      console.error('Error parsing questions:', error)
+      console.error('Error parsing questions:', error);
       return new Response(
         JSON.stringify({ error: "Failed to parse questions" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+      );
     }
 
     // Return the questions
     return new Response(
       JSON.stringify(questions),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
     
   } catch (error) {
-    console.error('Error in generate-questions function:', error)
+    console.error('Error in generate-questions function:', error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
   }
 })
