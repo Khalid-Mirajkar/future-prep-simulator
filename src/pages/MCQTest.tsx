@@ -1,4 +1,3 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -22,10 +21,10 @@ const MCQTest = () => {
   const [showResults, setShowResults] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  // More unique seed generation with timestamp and random component
   const [questionSeed, setQuestionSeed] = useState(() => 
     Math.floor(Math.random() * 1000000) + Date.now() % 10000
   );
+  const [isIncompatibleJob, setIsIncompatibleJob] = useState(false);
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -38,6 +37,7 @@ const MCQTest = () => {
       try {
         setIsLoading(true);
         setError(null);
+        setIsIncompatibleJob(false);
         
         console.log('Calling generate-questions with:', { companyName, jobTitle, seed: questionSeed });
         
@@ -58,8 +58,12 @@ const MCQTest = () => {
           console.error('Invalid response format:', data);
           throw new Error('Received invalid question data');
         }
+
+        if (data.length === 1 && data[0].options && data[0].options.length === 1 && 
+            data[0].options[0] === "Try a different job role") {
+          setIsIncompatibleJob(true);
+        }
         
-        // Verify all questions have exactly 4 options
         const validatedData = data.map(question => {
           if (!question.options || question.options.length !== 4) {
             console.warn('Question with incorrect number of options found, fixing:', question);
@@ -129,12 +133,15 @@ const MCQTest = () => {
     setSelectedAnswers({});
     setShowResults(false);
     setTestResult(null);
-    // Generate a completely new seed combining timestamp and random value
     setQuestionSeed(Math.floor(Math.random() * 1000000) + Date.now() % 10000);
     setIsLoading(true);
   };
 
   const handleTakeAnotherTest = () => {
+    navigate('/start-practice');
+  };
+
+  const handleBackToStart = () => {
     navigate('/start-practice');
   };
 
@@ -168,6 +175,30 @@ const MCQTest = () => {
               Try Again
             </Button>
             <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">
+              Back to Start
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isIncompatibleJob && questions.length === 1) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+        <div className="container mx-auto px-6 max-w-2xl">
+          <Alert className="mb-6 border-amber-500 bg-amber-500/20">
+            <AlertTitle className="text-lg">Job-Company Mismatch</AlertTitle>
+            <AlertDescription>
+              {questions[0].question}
+              {questions[0].explanation && (
+                <p className="mt-2 text-sm">{questions[0].explanation}</p>
+              )}
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-8">
+            <Button onClick={handleBackToStart} size="lg">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Start
             </Button>
           </div>
