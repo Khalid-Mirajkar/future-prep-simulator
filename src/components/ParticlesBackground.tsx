@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from "react";
 
 type Particle = {
@@ -33,18 +32,17 @@ const ParticlesBackground = () => {
     
     const initParticles = () => {
       particles = [];
-      // Increase particle count for better visibility
       const particleCount = Math.min(Math.floor(window.innerWidth * 0.2), 300);
       const spaceColors = [
-        '#9b87f5', // bright purple
-        '#6A0DAD', // deep purple
-        '#7B2CBF', // royal purple
-        '#E5DEFF', // light purple
-        '#FFD700', // gold (for stars)
-        '#B8B8FF', // periwinkle
-        '#4A0E4E',  // dark purple
-        '#8A4FFF',   // vibrant purple
-        '#D6BCFA'  // soft purple
+        '#9b87f5',
+        '#6A0DAD',
+        '#7B2CBF',
+        '#E5DEFF',
+        '#FFD700',
+        '#B8B8FF',
+        '#4A0E4E',
+        '#8A4FFF',
+        '#D6BCFA'
       ];
       
       for (let i = 0; i < particleCount; i++) {
@@ -68,7 +66,6 @@ const ParticlesBackground = () => {
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Enhanced cosmic gradient background with more purple shades
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, '#0D0D0D');
       gradient.addColorStop(0.25, '#1a1025');
@@ -80,7 +77,6 @@ const ParticlesBackground = () => {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       particles.forEach((particle) => {
-        // Update position with wrapping
         particle.x += particle.speedX;
         particle.y += particle.speedY;
         
@@ -89,18 +85,14 @@ const ParticlesBackground = () => {
         if (particle.y > canvas.height) particle.y = 0;
         else if (particle.y < 0) particle.y = canvas.height;
         
-        // Draw particle based on type
-        ctx.beginPath();
         const particleGradient = ctx.createRadialGradient(
           particle.x, particle.y, 0,
           particle.x, particle.y, particle.size * 3
         );
         
         if (particle.type === 'star') {
-          // Enhanced twinkling effect for stars
           particle.opacity = 0.5 + Math.sin(Date.now() * 0.003 + particle.x) * 0.4;
           
-          // Use rgba for proper color formatting
           const color = hexToRgba(particle.color, particle.opacity);
           particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -108,9 +100,8 @@ const ParticlesBackground = () => {
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         } else if (particle.type === 'planet') {
-          // More distinct planet-like appearance
           const color = hexToRgba(particle.color, particle.opacity);
-          const midColor = hexToRgba(particle.color, 0.4); // Use 0.4 for mid opacity
+          const midColor = hexToRgba(particle.color, 0.4);
           
           particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(0.5, midColor);
@@ -119,7 +110,6 @@ const ParticlesBackground = () => {
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, Math.PI * 2);
         } else {
-          // Cosmic dust with slight variation
           const color = hexToRgba(particle.color, particle.opacity);
           
           particleGradient.addColorStop(0, color);
@@ -132,7 +122,6 @@ const ParticlesBackground = () => {
         ctx.fill();
       });
       
-      // More subtle particle connections
       ctx.strokeStyle = 'rgba(155, 135, 245, 0.08)';
       ctx.lineWidth = 0.5;
       
@@ -156,17 +145,13 @@ const ParticlesBackground = () => {
       animationFrameId = requestAnimationFrame(drawParticles);
     };
     
-    // Helper function to convert hex to rgba
     const hexToRgba = (hex: string, opacity: number): string => {
-      // Remove # if present
       hex = hex.replace('#', '');
       
-      // Parse hex to RGB
       const r = parseInt(hex.substring(0, 2), 16);
       const g = parseInt(hex.substring(2, 4), 16);
       const b = parseInt(hex.substring(4, 6), 16);
       
-      // Return rgba string
       return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     };
     
@@ -183,10 +168,10 @@ const ParticlesBackground = () => {
   return (
     <canvas 
       ref={canvasRef}
-      className="fixed top-0 left-0 w-full h-full z-[-1]" // Set z-index to -1 to ensure it's behind content
+      className="fixed top-0 left-0 w-full h-full z-[-1]"
       style={{ 
         position: 'absolute',
-        pointerEvents: 'none' // Ensures clicks pass through to elements below
+        pointerEvents: 'none'
       }}
     />
   );
