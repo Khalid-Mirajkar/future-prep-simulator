@@ -96,27 +96,30 @@ const ParticlesBackground = () => {
           particle.x, particle.y, particle.size * 3
         );
         
-        const alpha = Math.floor(particle.opacity * 255).toString(16).padStart(2, '0');
+        // Convert opacity to hex (0-255) and ensure it has 2 digits
+        const alpha = Math.floor(particle.opacity * 255)
+          .toString(16)
+          .padStart(2, '0');
         
         if (particle.type === 'star') {
           // Enhanced twinkling effect for stars
           particle.opacity = 0.5 + Math.sin(Date.now() * 0.003 + particle.x) * 0.4;
-          particleGradient.addColorStop(0, `${particle.color}${alpha}`);
+          particleGradient.addColorStop(0, particle.color + alpha);
           particleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         } else if (particle.type === 'planet') {
           // More distinct planet-like appearance
-          particleGradient.addColorStop(0, `${particle.color}${alpha}`);
-          particleGradient.addColorStop(0.5, `${particle.color}66`);
+          particleGradient.addColorStop(0, particle.color + alpha);
+          particleGradient.addColorStop(0.5, particle.color + '66');
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, Math.PI * 2);
         } else {
           // Cosmic dust with slight variation
-          particleGradient.addColorStop(0, `${particle.color}${alpha}`);
+          particleGradient.addColorStop(0, particle.color + alpha);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
           ctx.fillStyle = particleGradient;
