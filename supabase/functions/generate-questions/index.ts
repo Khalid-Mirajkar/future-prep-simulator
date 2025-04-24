@@ -8,8 +8,8 @@ const corsHeaders = {
 }
 
 // Generate mock questions with enhanced relevance based on job categories
-const generateMockQuestions = (companyName: string, jobTitle: string) => {
-  console.log('Using mock questions for:', companyName, jobTitle);
+const generateMockQuestions = (companyName: string, jobTitle: string, seed = Date.now()) => {
+  console.log('Using mock questions for:', companyName, jobTitle, 'with seed:', seed);
   
   // Identify job category for more relevant questions
   const jobTitleLower = jobTitle.toLowerCase();
@@ -46,7 +46,7 @@ const generateMockQuestions = (companyName: string, jobTitle: string) => {
     {
       id: 1,
       question: `Which of the following best describes ${companyName}'s primary business?`,
-      options: [getCompanySpecificOptions(companyName)],
+      options: getCompanySpecificOptions(companyName),
       correctAnswer: 0,
       explanation: `Understanding ${companyName}'s business is fundamental for any role within the company.`
     },
@@ -211,18 +211,29 @@ const generateMockQuestions = (companyName: string, jobTitle: string) => {
   }
 
   // Randomly select and shuffle questions to ensure variety
-  const shuffleArray = (array: any[]) => {
+  const shuffleArray = (array: any[], seedValue = seed) => {
+    // Create a seeded random function
+    const seededRandom = createSeededRandom(seedValue);
+    
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(seededRandom() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
   };
 
+  // Seeded random number generator
+  function createSeededRandom(seed: number) {
+    return function() {
+      seed = (seed * 9301 + 49297) % 233280;
+      return seed / 233280;
+    };
+  }
+
   // Combine and select questions
   const allQuestions = [...commonQuestions, ...shuffleArray(jobSpecificQuestions)];
-  return allQuestions.slice(0, 7);
+  return shuffleArray(allQuestions).slice(0, 7);
 };
 
 // Helper function to generate company-specific options for the first question
@@ -260,16 +271,16 @@ serve(async (req) => {
   }
 
   try {
-    const { companyName, jobTitle } = await req.json()
+    const { companyName, jobTitle, seed } = await req.json()
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
 
-    console.log('Generating questions for:', { companyName, jobTitle });
+    console.log('Generating questions for:', { companyName, jobTitle, seed });
     console.log('OpenAI API Key available:', !!openAIApiKey);
 
     // If no API key is set, use enhanced mock data
     if (!openAIApiKey) {
       console.log('No OpenAI API key found, using mock questions');
-      const mockQuestions = generateMockQuestions(companyName, jobTitle);
+      const mockQuestions = generateMockQuestions(companyName, jobTitle, seed);
       return new Response(JSON.stringify(mockQuestions), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -294,6 +305,7 @@ serve(async (req) => {
     - Be tailored specifically for a ${jobTitle} at ${companyName}
     - Cover key skills and knowledge required for this exact role
     - Range from beginner to intermediate difficulty
+    - Have EXACTLY four options for each question
     - Have one correct answer and three plausible distractors
     - Include a clear explanation for the correct answer
     - AVOID technical programming questions for non-technical roles
@@ -339,6 +351,22 @@ serve(async (req) => {
         console.error('OpenAI did not return a valid question array:', data.choices[0].message.content)
         throw new Error('Invalid question format returned from OpenAI')
       }
+      
+      // Validate that each question has exactly 4 options
+      for (const q of questions) {
+        if (!q.options || !Array.isArray(q.options) || q.options.length !== 4) {
+          console.error('Question has invalid options:', q)
+          q.options = q.options || []
+          // Fill in missing options if needed
+          while (q.options.length < 4) {
+            q.options.push(`Option ${q.options.length + 1}`)
+          }
+          // Trim excess options if needed
+          if (q.options.length > 4) {
+            q.options = q.options.slice(0, 4)
+          }
+        }
+      }
     } catch (parseError) {
       console.error('Failed to parse questions JSON:', parseError, data.choices[0].message.content)
       throw new Error('Failed to parse questions from OpenAI response')
@@ -349,27 +377,43 @@ serve(async (req) => {
       id: index + 1,
       ...q,
     }))
-
-    console.log('Successfully generated questions:', questionsWithIds.length)
+    
+    // Shuffle questions with seed
+    const shuffleWithSeed = (array: any[], seedVal = seed || Date.now()) => {
+      const seededRandom = () => {
+        seedVal = (seedVal * 9301 + 49297) % 233280;
+        return seedVal / 233280;
+      };
+      
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+    
+    const shuffledQuestions = shuffleWithSeed(questionsWithIds);
+    console.log('Successfully generated questions:', shuffledQuestions.length);
 
     // Use mock data as fallback in case of empty response or other issues
-    if (questionsWithIds.length < 3) {
+    if (shuffledQuestions.length < 3) {
       console.log('OpenAI returned too few questions, using mock questions instead');
-      const mockQuestions = generateMockQuestions(companyName, jobTitle);
+      const mockQuestions = generateMockQuestions(companyName, jobTitle, seed);
       return new Response(JSON.stringify(mockQuestions), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify(questionsWithIds), {
+    return new Response(JSON.stringify(shuffledQuestions), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('Error generating questions:', error)
     // Use mock questions as fallback in case of any error
     try {
-      const { companyName, jobTitle } = await req.json();
-      const mockQuestions = generateMockQuestions(companyName, jobTitle);
+      const { companyName, jobTitle, seed } = await req.json();
+      const mockQuestions = generateMockQuestions(companyName, jobTitle, seed);
       console.log('Error occurred, falling back to mock questions');
       
       return new Response(JSON.stringify(mockQuestions), {

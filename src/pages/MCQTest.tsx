@@ -1,3 +1,4 @@
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -21,6 +22,7 @@ const MCQTest = () => {
   const [showResults, setShowResults] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [questionSeed, setQuestionSeed] = useState(() => Math.floor(Math.random() * 1000000));
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -34,10 +36,14 @@ const MCQTest = () => {
         setIsLoading(true);
         setError(null);
         
-        console.log('Calling generate-questions with:', { companyName, jobTitle });
+        console.log('Calling generate-questions with:', { companyName, jobTitle, seed: questionSeed });
         
         const { data, error } = await supabase.functions.invoke('generate-questions', {
-          body: { companyName, jobTitle }
+          body: { 
+            companyName, 
+            jobTitle, 
+            seed: questionSeed
+          }
         });
 
         if (error) {
@@ -49,9 +55,23 @@ const MCQTest = () => {
           console.error('Invalid response format:', data);
           throw new Error('Received invalid question data');
         }
+        
+        // Verify all questions have at least 2 options
+        const validatedData = data.map(question => {
+          if (!question.options || question.options.length < 2) {
+            console.warn('Question with insufficient options found, fixing:', question);
+            return {
+              ...question,
+              options: question.options?.length ? 
+                [...question.options, "Option 2", "Option 3", "Option 4"].slice(0, 4) : 
+                ["Option 1", "Option 2", "Option 3", "Option 4"]
+            };
+          }
+          return question;
+        });
 
-        console.log('Successfully loaded questions:', data.length);
-        setQuestions(data);
+        console.log('Successfully loaded questions:', validatedData.length);
+        setQuestions(validatedData);
       } catch (err) {
         console.error('Error loading questions:', err);
         setError('Failed to load questions. Please try again.');
@@ -66,7 +86,7 @@ const MCQTest = () => {
     };
 
     loadQuestions();
-  }, [companyName, jobTitle, toast, retryCount]);
+  }, [companyName, jobTitle, toast, retryCount, questionSeed]);
 
   const handleOptionSelect = (questionId: number, optionIndex: number) => {
     setSelectedAnswers(prev => ({
@@ -107,7 +127,12 @@ const MCQTest = () => {
     setShowResults(false);
     setTestResult(null);
     setRetryCount(prev => prev + 1);
+    setQuestionSeed(Math.floor(Math.random() * 1000000)); // Generate new seed for different questions
     setIsLoading(true);
+  };
+
+  const handleTakeAnotherTest = () => {
+    navigate('/start-practice');
   };
 
   if (isLoading) {
@@ -216,7 +241,7 @@ const MCQTest = () => {
                 Restart Test (New Questions)
               </Button>
               <Button 
-                onClick={() => navigate('/start-practice')} 
+                onClick={handleTakeAnotherTest} 
                 className="flex-1"
                 variant="outline"
               >
