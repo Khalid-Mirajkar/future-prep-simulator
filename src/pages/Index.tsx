@@ -76,7 +76,10 @@ const Index = () => {
           <p className="text-xl md:text-2xl mb-4 text-gray-300 max-w-3xl mx-auto">
             The future of interview prep is here. Tailored. Realistic. Powerful.
           </p>
-          <button className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4">
+          <button 
+            onClick={() => window.location.href = '/start-practice'} 
+            className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4"
+          >
             Start Free Practice
           </button>
           <p className="text-gray-400 text-sm">Already helping 1,200+ students ace their dream interviews</p>
