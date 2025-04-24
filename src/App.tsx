@@ -12,6 +12,7 @@ import StartPractice from "./pages/StartPractice";
 import MCQTest from "./pages/MCQTest";
 import Results from "./pages/Results";
 import ComingSoon from "./pages/ComingSoon";
+import ParticlesBackground from "./components/ParticlesBackground";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
+        <ParticlesBackground />
         <Toaster />
         <Sonner />
         <BrowserRouter>
