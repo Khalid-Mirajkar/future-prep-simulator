@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLogin, setIsLogin] = useState(true);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -41,6 +43,30 @@ export default function Auth() {
           description: "Please check your email to verify your account.",
         });
       }
+    } catch (error: any) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for the password reset link",
+      });
+      setShowForgotPassword(false);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -83,12 +109,17 @@ export default function Auth() {
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading
-              ? "Loading..."
-              : isLogin
-              ? "Sign In"
-              : "Create Account"}
+            {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
           </Button>
+          {isLogin && (
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-purple-400 hover:text-purple-300 transition-colors w-full text-center mt-2"
+            >
+              Forgot Password?
+            </button>
+          )}
         </form>
         <button
           onClick={() => setIsLogin(!isLogin)}
@@ -99,6 +130,33 @@ export default function Auth() {
             : "Already have an account? Sign In"}
         </button>
       </div>
+
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="bg-[#0D0D0D] text-white border border-white/10">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Enter your email address and we'll send you a password reset link.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <Label htmlFor="reset-email">Email</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-black/50 border-white/20"
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Sending..." : "Send Reset Link"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
