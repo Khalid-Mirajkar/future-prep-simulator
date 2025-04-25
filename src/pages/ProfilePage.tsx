@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,25 @@ export default function ProfilePage() {
   const { profile, loading, updateProfile } = useProfile();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    first_name: profile?.first_name || "",
-    last_name: profile?.last_name || "",
-    phone: profile?.phone || "",
-    linkedin_url: profile?.linkedin_url || "",
+    first_name: "",
+    last_name: "",
+    phone: "",
+    linkedin_url: "",
   });
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Update form data when profile is loaded or changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        phone: profile.phone || "",
+        linkedin_url: profile.linkedin_url || "",
+      });
+      setHasChanges(false);
+    }
+  }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -28,8 +41,10 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateProfile(formData);
-    setHasChanges(false);
+    const success = await updateProfile(formData);
+    if (success) {
+      setHasChanges(false);
+    }
   };
 
   if (loading) {

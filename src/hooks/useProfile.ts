@@ -21,8 +21,13 @@ export function useProfile() {
 
   async function fetchProfile() {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user logged in');
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -30,8 +35,31 @@ export function useProfile() {
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error) {
+        // If the error is 'not found', create a new profile
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, creating a new one');
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({ id: user.id });
+          
+          if (insertError) throw insertError;
+          
+          // Fetch the newly created profile
+          const { data: newProfile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (fetchError) throw fetchError;
+          setProfile(newProfile);
+        } else {
+          throw error;
+        }
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
@@ -56,11 +84,15 @@ export function useProfile() {
 
       if (error) throw error;
 
+      // After successful update, update the local state
       setProfile(prev => prev ? { ...prev, ...updates } : null);
+      
       toast({
         title: "Success",
         description: "Profile updated successfully"
       });
+      
+      return true;
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -68,6 +100,7 @@ export function useProfile() {
         title: "Error",
         description: "Failed to update profile"
       });
+      return false;
     }
   }
 
