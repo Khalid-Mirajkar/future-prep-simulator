@@ -1,9 +1,10 @@
-
+import React, { useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
+import { Home } from "lucide-react"
 import {
   Form,
   FormControl,
@@ -18,7 +19,6 @@ import { useCompanyValidation } from "@/hooks/useCompanyValidation"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { useEffect } from "react"
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -40,7 +40,6 @@ const StartPractice = () => {
     },
   })
 
-  // Clear validation when form is reset
   useEffect(() => {
     return () => {
       clearValidation();
@@ -72,7 +71,6 @@ const StartPractice = () => {
     }
   }
 
-  // Function to validate company on blur
   const handleBlur = async () => {
     const companyName = form.getValues("companyName");
     if (companyName && companyName.length >= 2) {
@@ -81,7 +79,17 @@ const StartPractice = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
+    <div className="min-h-screen bg-[#0D0D0D] text-white py-20 relative">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="absolute top-4 right-4"
+        onClick={() => navigate('/')}
+        title="Back to Home"
+      >
+        <Home className="h-6 w-6" />
+      </Button>
+
       <div className="container mx-auto px-6">
         <h1 className="text-4xl font-bold mb-8 text-center">Start Your Interview Practice</h1>
         
