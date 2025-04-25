@@ -92,13 +92,31 @@ serve(async (req) => {
     if (!openaiApiKey) {
       console.error("Missing OpenAI API key");
       return new Response(
-        JSON.stringify({ error: "OpenAI API key not configured" }),
+        JSON.stringify({ 
+          error: "OpenAI API key not configured in Supabase Edge Function secrets", 
+          details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'"
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Also check for "Open AI API" key (with spaces) for backward compatibility
+    const oldApiKey = Deno.env.get("Open AI API");
+    const apiKeyToUse = openaiApiKey || oldApiKey;
+
+    if (!apiKeyToUse) {
+      console.error("No valid OpenAI API key found");
+      return new Response(
+        JSON.stringify({ 
+          error: "No valid OpenAI API key found in Supabase Edge Function secrets", 
+          details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'"
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const openai = new OpenAI({
-      apiKey: openaiApiKey,
+      apiKey: apiKeyToUse,
     });
 
     // Categorize job for relevant question generation
@@ -230,7 +248,10 @@ serve(async (req) => {
       } catch (error) {
         console.error('Error parsing questions:', error);
         return new Response(
-          JSON.stringify({ error: "Failed to parse questions" }),
+          JSON.stringify({ 
+            error: "Failed to parse questions from OpenAI response",
+            details: error.message
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -249,9 +270,22 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: "OpenAI API quota exceeded. Please update your API key or try again later.",
-            code: "insufficient_quota"
+            code: "insufficient_quota",
+            details: error.message || "You have exceeded your current quota"
           }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Handle authentication errors
+      if (error.status === 401 || (error.error && (error.error.type === "invalid_request_error" || error.error.type === "authentication_error"))) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Invalid OpenAI API key. Please check your API key and update it in the Edge Function secrets.",
+            code: "authentication_error",
+            details: error.message || "Authentication failed"
+          }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       
@@ -259,7 +293,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: "Error generating questions with OpenAI API. Please try again.",
-          details: error.message
+          details: error.message,
+          code: error.error?.type || "error"
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -268,7 +303,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-questions function:', error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
+      JSON.stringify({ 
+        error: "Internal server error", 
+        details: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

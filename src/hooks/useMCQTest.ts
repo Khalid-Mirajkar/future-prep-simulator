@@ -39,7 +39,7 @@ export const useMCQTest = () => {
         
         console.log(`Loading questions for ${companyName} - ${jobTitle} with seed ${questionSeed}`);
         
-        const { data, error } = await supabase.functions.invoke('generate-questions', {
+        const { data, error: supabaseError } = await supabase.functions.invoke('generate-questions', {
           body: { 
             companyName, 
             jobTitle, 
@@ -47,33 +47,36 @@ export const useMCQTest = () => {
           }
         });
 
-        if (error) {
-          console.error('Error calling generate-questions function:', error);
+        if (supabaseError) {
+          console.error('Error calling generate-questions function:', supabaseError);
           
           // Check for specific error types from the edge function response
-          if (error.message && error.message.includes("Edge Function returned a non-2xx status code")) {
-            // Try to get more details from the error
-            if (data && data.error) {
-              if (data.code === "insufficient_quota") {
-                throw new Error('OpenAI API quota exceeded. Please update your API key or try again later.');
+          if (supabaseError.message) {
+            if (supabaseError.message.includes("Edge Function returned a non-2xx status code")) {
+              if (data && data.error) {
+                if (data.code === "insufficient_quota") {
+                  throw new Error('OpenAI API quota exceeded. Please update your API key or try again later.');
+                } else {
+                  throw new Error(data.error);
+                }
               } else {
-                throw new Error(data.error);
+                // Try to get more detailed error information
+                console.error('Edge function response data:', data);
+                throw new Error('Error generating questions. This may be due to an issue with the OpenAI API key configuration or API quota limits.');
               }
+            } else if (supabaseError.message.includes("quota")) {
+              throw new Error('OpenAI API quota exceeded. Please try again later or contact support.');
+            } else if (supabaseError.message.includes("API key")) {
+              throw new Error('Invalid or missing OpenAI API key. Please check the configuration in Supabase Edge Function Secrets.');
             } else {
-              throw new Error('Error generating questions. This may be due to API quota limits or server issues.');
+              throw new Error(supabaseError.message || 'Failed to load questions');
             }
-          } else if (error.message && error.message.includes("quota")) {
-            throw new Error('OpenAI API quota exceeded. Please try again later or contact support.');
-          } else if (error.message && error.message.includes("API key")) {
-            throw new Error('Invalid or missing OpenAI API key. Please check the configuration.');
-          } else {
-            throw new Error(error.message || 'Failed to load questions');
           }
         }
 
         if (!data || !Array.isArray(data)) {
           console.error('Invalid response format:', data);
-          throw new Error('Received invalid question data');
+          throw new Error('Received invalid question data from the server');
         }
 
         if (data.length === 1 && data[0].options && data[0].options.length === 1 && 
