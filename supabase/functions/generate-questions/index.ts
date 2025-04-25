@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.5"
 import OpenAI from "https://esm.sh/openai@4.12.1"
@@ -86,17 +87,29 @@ serve(async (req) => {
       );
     }
 
-    // Set up OpenAI client - Check for multiple possible secret names
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("Open AI API");
+    // Get all environment variables for debugging
+    const envVars = Object.keys(Deno.env.toObject());
+    console.log("Available environment variables:", envVars);
+
+    // Try multiple possible API key formats and names
+    let openaiApiKey = Deno.env.get("OPENAI_API_KEY") || 
+                       Deno.env.get("OPENAI_API") || 
+                       Deno.env.get("Open AI API") || 
+                       Deno.env.get("OPEN_AI_API_KEY");
     
+    // Remove any potential whitespace from the key
+    if (openaiApiKey) {
+      openaiApiKey = openaiApiKey.trim();
+    }
+
     // Debug information about the API key
     if (!openaiApiKey) {
-      console.error("Missing OpenAI API key - All environment variables:", Object.keys(Deno.env.toObject()));
+      console.error("Missing OpenAI API key - Available env vars:", envVars);
       return new Response(
         JSON.stringify({ 
-          error: "OpenAI API key not configured correctly", 
+          error: "OpenAI API key not found in environment variables", 
           details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'",
-          availableSecrets: Object.keys(Deno.env.toObject()).filter(key => !key.startsWith("SUPABASE_"))
+          availableSecrets: envVars.filter(key => !key.startsWith("SUPABASE_"))
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -106,7 +119,7 @@ serve(async (req) => {
     console.log("API key prefix:", openaiApiKey.substring(0, 5) + "...");
     
     try {
-      // Just verify the API key format
+      // Verify the API key format
       if (!openaiApiKey.startsWith("sk-")) {
         return new Response(
           JSON.stringify({ 
@@ -188,9 +201,9 @@ serve(async (req) => {
       console.log("Calling OpenAI API with prompt");
       
       try {
-        // Make the API call to OpenAI using the updated SDK format
+        // Use a cheaper, lighter model to avoid quota issues
         const chatCompletion = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // Using a more lightweight model
+          model: "gpt-4o-mini", // Using a lighter model to avoid quota issues
           temperature: 0.7,
           messages: [
             { role: "system", content: "You are an expert job interview coach who creates realistic interview questions." },
@@ -252,7 +265,8 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               error: "Failed to parse questions from OpenAI response",
-              details: error.message
+              details: error.message,
+              rawContent: content
             }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
@@ -264,13 +278,12 @@ serve(async (req) => {
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
 
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error calling OpenAI API:', error);
         
         // Print more detailed error info to help diagnose
-        if (error.response) {
-          console.error("Response from OpenAI:", error.response);
-        }
+        const errorDetails = JSON.stringify(error, Object.getOwnPropertyNames(error));
+        console.error("Detailed error:", errorDetails);
         
         // Check if it's a quota exceeded error
         if (error.status === 429 || (error.error && error.error.type === "insufficient_quota")) {
@@ -285,7 +298,8 @@ serve(async (req) => {
         }
         
         // Handle authentication errors
-        if (error.status === 401 || (error.error && (error.error.type === "invalid_request_error" || error.error.type === "authentication_error"))) {
+        if (error.status === 401 || error.status === 403 || 
+            (error.error && (error.error.type === "invalid_request_error" || error.error.type === "authentication_error"))) {
           return new Response(
             JSON.stringify({ 
               error: "Invalid OpenAI API key. Please check your API key and update it in the Edge Function secrets.",
