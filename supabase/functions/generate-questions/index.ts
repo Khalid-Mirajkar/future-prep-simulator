@@ -87,49 +87,45 @@ serve(async (req) => {
       );
     }
 
-    // Get all environment variables for debugging
-    const envVars = Object.keys(Deno.env.toObject());
-    console.log("Available environment variables:", envVars);
-
     // Try multiple possible API key formats and names
     let openaiApiKey = Deno.env.get("OPENAI_API_KEY") || 
                        Deno.env.get("OPENAI_API") || 
                        Deno.env.get("Open AI API") || 
                        Deno.env.get("OPEN_AI_API_KEY");
     
+    // Debug information about available environment variables
+    const envVars = Object.keys(Deno.env.toObject()).filter(key => !key.startsWith("SUPABASE_"));
+    console.log("Available non-Supabase environment variables:", envVars);
+    
     // Remove any potential whitespace from the key
     if (openaiApiKey) {
       openaiApiKey = openaiApiKey.trim();
-    }
-
-    // Debug information about the API key
-    if (!openaiApiKey) {
+      console.log("OpenAI API key found with length:", openaiApiKey.length);
+      console.log("API key prefix:", openaiApiKey.substring(0, 5) + "...");
+    } else {
       console.error("Missing OpenAI API key - Available env vars:", envVars);
       return new Response(
         JSON.stringify({ 
           error: "OpenAI API key not found in environment variables", 
           details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'",
-          availableSecrets: envVars.filter(key => !key.startsWith("SUPABASE_"))
+          availableSecrets: envVars
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("OpenAI API key found with length:", openaiApiKey.length);
-    console.log("API key prefix:", openaiApiKey.substring(0, 5) + "...");
-    
-    try {
-      // Verify the API key format
-      if (!openaiApiKey.startsWith("sk-")) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Invalid OpenAI API key format", 
-            details: "API key should start with 'sk-'. Please check the key in your Edge Function secrets."
-          }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // Verify the API key format
+    if (!openaiApiKey.startsWith("sk-")) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid OpenAI API key format", 
+          details: "API key should start with 'sk-'. Please check the key in your Edge Function secrets."
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
+    try {
       const openai = new OpenAI({
         apiKey: openaiApiKey,
       });
@@ -213,6 +209,7 @@ serve(async (req) => {
 
         // Extract content from the response
         const content = chatCompletion.choices[0].message.content;
+        console.log("Successfully received response from OpenAI");
         
         // Parse the JSON from the content
         let questions = [];
@@ -226,6 +223,7 @@ serve(async (req) => {
           }
           
           questions = JSON.parse(jsonContent);
+          console.log(`Successfully parsed ${questions.length} questions`);
           
           // Validate the questions format
           questions = questions.map((q, index) => {
@@ -259,9 +257,9 @@ serve(async (req) => {
             return q;
           });
           
-          console.log(`Successfully generated ${questions.length} questions`);
         } catch (error) {
           console.error('Error parsing questions:', error);
+          console.error('Raw content:', content);
           return new Response(
             JSON.stringify({ 
               error: "Failed to parse questions from OpenAI response",
@@ -289,9 +287,10 @@ serve(async (req) => {
         if (error.status === 429 || (error.error && error.error.type === "insufficient_quota")) {
           return new Response(
             JSON.stringify({ 
-              error: "OpenAI API quota exceeded. Please update your API key or try again later.",
+              error: "OpenAI API quota exceeded. Please check your billing details or try again later.",
               code: "insufficient_quota",
-              details: error.message || "You have exceeded your current quota"
+              details: error.message || "You have exceeded your current quota",
+              resolution: "Please check that your OpenAI account is properly set up for billing and has available credits."
             }),
             { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
@@ -304,7 +303,8 @@ serve(async (req) => {
             JSON.stringify({ 
               error: "Invalid OpenAI API key. Please check your API key and update it in the Edge Function secrets.",
               code: "authentication_error",
-              details: error.message || "Authentication failed"
+              details: error.message || "Authentication failed",
+              resolution: "Make sure your API key is valid, starts with 'sk-', and doesn't have any extra whitespace."
             }),
             { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );

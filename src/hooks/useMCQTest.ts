@@ -67,10 +67,10 @@ export const useMCQTest = () => {
               } else if (supabaseError.message.includes("401")) {
                 throw new Error('Invalid or missing OpenAI API key. Please check the configuration in Supabase Edge Function Secrets.');
               } else if (supabaseError.message.includes("429")) {
-                throw new Error('OpenAI API quota exceeded. Please update your API key or try again later.');
+                throw new Error('OpenAI API quota exceeded. Please check your billing details or try again later.');
               } else {
                 console.error('Edge function response data:', data);
-                throw new Error('Error generating questions. Please check your API key and try again.');
+                throw new Error('Error generating questions. This may be due to an issue with the OpenAI API key configuration. Please check the Edge Function logs for more details.');
               }
             } else {
               throw new Error(supabaseError.message || 'Failed to load questions');
@@ -79,7 +79,7 @@ export const useMCQTest = () => {
         }
 
         if (!data) {
-          throw new Error('No data received from the server. Please check the Edge Function logs.');
+          throw new Error('No data received from the server. Please check the Edge Function logs for more information.');
         }
 
         if (!Array.isArray(data)) {
@@ -110,6 +110,15 @@ export const useMCQTest = () => {
 
         console.log('Successfully loaded questions:', validatedData.length);
         setQuestions(validatedData);
+        
+        // Show success toast
+        if (validatedData.length > 0) {
+          toast({
+            title: "Questions Generated Successfully",
+            description: `${validatedData.length} questions ready for your practice test`
+          });
+        }
+        
       } catch (err) {
         console.error('Error loading questions:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to load questions. Please try again.';

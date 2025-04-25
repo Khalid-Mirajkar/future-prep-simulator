@@ -56,41 +56,59 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
       <div className="container mx-auto px-6 max-w-2xl">
         <Alert variant="destructive" className="mb-6">
-          <AlertTitle className="text-lg">Error Generating Questions</AlertTitle>
-          <AlertDescription>
-            {error}
+          <AlertTitle className="text-xl font-bold">Error Generating Questions</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="mb-3 text-lg">{error}</p>
             {isQuotaError && (
-              <div className="mt-2 text-sm space-y-2">
-                <p>
-                  The OpenAI API quota has been exceeded. Please try one of the following:
+              <div className="mt-4 text-sm space-y-3 bg-red-900/30 p-4 rounded-md border border-red-800/50">
+                <p className="font-semibold text-base">
+                  The OpenAI API quota has been exceeded or there's a billing issue.
                 </p>
-                <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li>Wait for your quota to reset (usually daily or monthly)</li>
-                  <li>Update your API key in Supabase Edge Functions secrets</li>
-                  <li>Create a new API key with sufficient quota</li>
+                <ul className="list-disc pl-5 mt-2 space-y-2">
+                  <li>Ensure your OpenAI account has available credits or is properly set up for billing</li>
+                  <li>Check if you've exceeded your rate limits (new accounts have lower limits)</li>
+                  <li>Try creating a new API key with a higher quota</li>
+                  <li>Consider waiting a few minutes if you've made many requests recently</li>
                 </ul>
               </div>
             )}
             {isApiKeyError && (
-              <div className="mt-2 text-sm space-y-2">
-                <p>
-                  Please ensure a valid OpenAI API key is configured in the Supabase Edge Function Secrets with the name "OPENAI_API_KEY".
+              <div className="mt-4 text-sm space-y-3 bg-red-900/30 p-4 rounded-md border border-red-800/50">
+                <p className="font-semibold text-base">
+                  There's an issue with your OpenAI API key configuration.
                 </p>
-                <ul className="list-disc pl-5 mt-1 space-y-1">
+                <ul className="list-disc pl-5 mt-2 space-y-2">
                   <li>Verify that the API key starts with "sk-" and is entered correctly</li>
-                  <li>Check if there are any extra spaces before or after the key</li>
-                  <li>Ensure the key has the proper permissions for the GPT models</li>
-                  <li>Try creating a new API key from your OpenAI dashboard</li>
+                  <li>Make sure there are no invisible whitespace characters before or after the key</li>
+                  <li>Check that the key has been saved with the name "OPENAI_API_KEY" (case sensitive)</li>
+                  <li>Ensure your OpenAI account is properly set up and the key has not been revoked</li>
                 </ul>
               </div>
             )}
             {isGeneralError && (
-              <p className="mt-2 text-sm">
-                This may be due to a connection issue or server problem. Please check the Edge Function logs for more details or try again.
-              </p>
+              <div className="mt-4 text-sm space-y-3 bg-red-900/30 p-4 rounded-md border border-red-800/50">
+                <p className="font-semibold text-base">
+                  There was an unexpected error while generating questions.
+                </p>
+                <ul className="list-disc pl-5 mt-2 space-y-2">
+                  <li>This may be due to a temporary issue with the OpenAI API service</li>
+                  <li>Check the Edge Function logs for more detailed information</li>
+                  <li>Try refreshing and making another attempt</li>
+                </ul>
+              </div>
             )}
           </AlertDescription>
         </Alert>
+
+        <div className="bg-purple-900/20 p-5 rounded-lg border border-purple-700/30 mb-6">
+          <h3 className="font-semibold text-lg mb-2">Try a Different Approach</h3>
+          <p className="mb-4">Sometimes changing the random seed or retrying the request can resolve temporary issues.</p>
+          <Button onClick={regenerateWithNewSeed} size="lg" className="w-full mb-2 bg-purple-600 hover:bg-purple-700">
+            <Repeat className="mr-2 h-5 w-5" />
+            Generate New Questions
+          </Button>
+        </div>
+        
         <div className="text-center mt-8 space-y-4">
           <div className="flex flex-wrap gap-4 justify-center mb-4">
             <Button onClick={openSupabaseFunctions} size="lg" className="mr-1">
@@ -103,13 +121,9 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
             </Button>
           </div>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Button onClick={regenerateWithNewSeed} size="lg" className="mr-1 bg-purple-600 hover:bg-purple-700">
-              <Repeat className="mr-2 h-4 w-4" />
-              Try New Questions
-            </Button>
             <Button onClick={handleRetry} size="lg" className="mr-1">
               <RefreshCcw className="mr-2 h-4 w-4" />
-              Retry Same Questions
+              Retry
             </Button>
             <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">
               <ArrowLeft className="mr-2 h-4 w-4" />
