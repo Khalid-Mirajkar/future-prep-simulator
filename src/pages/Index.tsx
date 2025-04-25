@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +26,10 @@ const Index = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
+  };
+
+  const handleStartPractice = () => {
+    navigate('/start-practice');
   };
 
   const features = [
@@ -114,12 +117,12 @@ const Index = () => {
           <p className="text-xl md:text-2xl mb-4 text-gray-300 max-w-3xl mx-auto">
             The future of interview prep is here. Tailored. Realistic. Powerful.
           </p>
-          <button 
-            onClick={() => window.location.href = '/start-practice'} 
+          <Button 
+            onClick={handleStartPractice} 
             className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4"
           >
             Start Free Practice
-          </button>
+          </Button>
           <p className="text-gray-400 text-sm">Already helping 1,200+ students ace their dream interviews</p>
         </div>
       </section>
@@ -171,9 +174,9 @@ const Index = () => {
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Join thousands of successful candidates who improved their interview performance with AI.
           </p>
-          <button className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full">
+          <Button className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full">
             Start Free Practice
-          </button>
+          </Button>
         </div>
       </section>
       
