@@ -14,7 +14,7 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
   const navigate = useNavigate();
   
   // Detect specific error types
-  const isQuotaError = error.includes('quota');
+  const isQuotaError = error.includes('quota') || error.includes('insufficient_quota');
   const isApiKeyError = error.includes('API key');
 
   return (
@@ -26,7 +26,8 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
             {error}
             {isQuotaError && (
               <p className="mt-2 text-sm">
-                The OpenAI API quota has been exceeded. Please try again later or use a different API key.
+                The OpenAI API quota has been exceeded. Please update your API key in the Supabase Edge Functions secrets 
+                or try again later when your quota resets.
               </p>
             )}
             {isApiKeyError && (

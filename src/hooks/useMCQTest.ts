@@ -37,6 +37,8 @@ export const useMCQTest = () => {
         setError(null);
         setIsIncompatibleJob(false);
         
+        console.log(`Loading questions for ${companyName} - ${jobTitle} with seed ${questionSeed}`);
+        
         const { data, error } = await supabase.functions.invoke('generate-questions', {
           body: { 
             companyName, 
@@ -48,8 +50,19 @@ export const useMCQTest = () => {
         if (error) {
           console.error('Error calling generate-questions function:', error);
           
-          // Check for specific error types
-          if (error.message && error.message.includes("quota")) {
+          // Check for specific error types from the edge function response
+          if (error.message && error.message.includes("Edge Function returned a non-2xx status code")) {
+            // Try to get more details from the error
+            if (data && data.error) {
+              if (data.code === "insufficient_quota") {
+                throw new Error('OpenAI API quota exceeded. Please update your API key or try again later.');
+              } else {
+                throw new Error(data.error);
+              }
+            } else {
+              throw new Error('Error generating questions. This may be due to API quota limits or server issues.');
+            }
+          } else if (error.message && error.message.includes("quota")) {
             throw new Error('OpenAI API quota exceeded. Please try again later or contact support.');
           } else if (error.message && error.message.includes("API key")) {
             throw new Error('Invalid or missing OpenAI API key. Please check the configuration.');
