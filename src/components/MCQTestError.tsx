@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, RefreshCcw, Key, ExternalLink } from "lucide-react";
+import { ArrowLeft, RefreshCcw, Key, ExternalLink, Bug } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -18,12 +18,21 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
   // Detect specific error types
   const isQuotaError = error.includes('quota') || error.includes('insufficient_quota');
   const isApiKeyError = error.includes('API key') || error.includes('authentication') || error.includes('Authorization');
+  const isGeneralError = !isQuotaError && !isApiKeyError;
 
   const openSupabaseFunctions = () => {
     window.open("https://supabase.com/dashboard/project/jdknamkvstwuihynclbr/settings/functions", "_blank");
     toast({
       title: "Opening Supabase Functions Settings",
       description: "Update your OpenAI API key in the 'Secrets' section"
+    });
+  };
+  
+  const openSupabaseLogs = () => {
+    window.open("https://supabase.com/dashboard/project/jdknamkvstwuihynclbr/functions/generate-questions/logs", "_blank");
+    toast({
+      title: "Opening Edge Function Logs",
+      description: "Check the logs for more detailed error information"
     });
   };
 
@@ -41,11 +50,18 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
               </p>
             )}
             {isApiKeyError && (
-              <p className="mt-2 text-sm">
-                Please ensure a valid OpenAI API key is configured in the Supabase Edge Function Secrets with the name "OPENAI_API_KEY".
-              </p>
+              <div className="mt-2 text-sm space-y-2">
+                <p>
+                  Please ensure a valid OpenAI API key is configured in the Supabase Edge Function Secrets with the name "OPENAI_API_KEY".
+                </p>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>Verify that the API key starts with "sk-" and is entered correctly</li>
+                  <li>Check if there are any extra spaces before or after the key</li>
+                  <li>Ensure the key has the proper permissions for the GPT models</li>
+                </ul>
+              </div>
             )}
-            {!isQuotaError && !isApiKeyError && (
+            {isGeneralError && (
               <p className="mt-2 text-sm">
                 This may be due to a connection issue or server problem. Please check the Edge Function logs for more details.
               </p>
@@ -53,18 +69,26 @@ const MCQTestError: React.FC<MCQTestErrorProps> = ({ error, handleRetry }) => {
           </AlertDescription>
         </Alert>
         <div className="text-center mt-8 space-y-4">
-          <Button onClick={openSupabaseFunctions} size="lg" className="mr-4">
-            <Key className="mr-2 h-4 w-4" />
-            Update API Key in Supabase
-          </Button>
-          <Button onClick={handleRetry} size="lg" className="mr-4">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
-          <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Start
-          </Button>
+          <div className="flex flex-wrap gap-4 justify-center mb-4">
+            <Button onClick={openSupabaseFunctions} size="lg" className="mr-1">
+              <Key className="mr-2 h-4 w-4" />
+              Update API Key
+            </Button>
+            <Button onClick={openSupabaseLogs} size="lg" className="mr-1" variant="outline">
+              <Bug className="mr-2 h-4 w-4" />
+              View Logs
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button onClick={handleRetry} size="lg" className="mr-1">
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+            <Button onClick={() => navigate('/start-practice')} variant="outline" size="lg">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Start
+            </Button>
+          </div>
         </div>
       </div>
     </div>
