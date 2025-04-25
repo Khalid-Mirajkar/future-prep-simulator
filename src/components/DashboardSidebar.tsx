@@ -12,7 +12,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Add Dashboard as the first item in the navigation
 const sidebarItems = [
+  {
+    title: "Dashboard",
+    icon: LayoutDashboard,
+    href: "/dashboard",
+  },
   {
     title: "My Profile",
     icon: UserRound,
