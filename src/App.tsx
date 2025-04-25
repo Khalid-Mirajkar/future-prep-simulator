@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import ComingSoon from "./pages/ComingSoon";
 import Dashboard from "./pages/Dashboard";
 import ComingSoonPlaceholder from "./components/ComingSoonPlaceholder";
 import ParticlesBackground from "./components/ParticlesBackground";
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +34,7 @@ const App = () => (
             <Route path="/results" element={<Results />} />
             <Route path="/coming-soon" element={<ComingSoon />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/profile" element={<ProfilePage />} />
             <Route path="/dashboard/:section" element={<ComingSoonPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
