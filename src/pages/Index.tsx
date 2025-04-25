@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +69,14 @@ const Index = () => {
                   <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors">
                     About
                   </a>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate('/dashboard')}
+                    className="text-gray-400 text-sm hover:text-white transition-colors"
+                  >
+                    Dashboard
+                  </button>
                 </li>
                 {user ? (
                   <>

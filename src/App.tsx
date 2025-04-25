@@ -12,6 +12,8 @@ import StartPractice from "./pages/StartPractice";
 import MCQTest from "./pages/MCQTest";
 import Results from "./pages/Results";
 import ComingSoon from "./pages/ComingSoon";
+import Dashboard from "./pages/Dashboard";
+import ComingSoonPlaceholder from "./components/ComingSoonPlaceholder";
 import ParticlesBackground from "./components/ParticlesBackground";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
             <Route path="/mcq-test" element={<MCQTest />} />
             <Route path="/results" element={<Results />} />
             <Route path="/coming-soon" element={<ComingSoon />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard/:section" element={<ComingSoonPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
