@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -223,11 +222,14 @@ const Index = () => {
               transition={{ duration: 0.5 }}
               viewport={{ once: true, amount: 0.2 }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-                Advanced Interview Preparation
+              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
+                Advanced Interview <span className="text-gradient">Preparation</span>
               </h2>
+              <p className="text-xl text-gray-300 mb-6 font-bold">
+                95% of Candidates Fail Because They're Unprepared — You're Not One of Them.
+              </p>
               <p className="text-xl text-gray-400">
-                Practice with AI that understands your industry, role, and career goals
+                Train with AI that understands your dream job better than you do — so you walk into interviews with bulletproof confidence.
               </p>
             </motion.div>
             
@@ -240,6 +242,7 @@ const Index = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true, amount: 0.2 }}
                   whileHover={{ y: -10, transition: { duration: 0.2 } }}
+                  className="h-full"
                 >
                   <FeatureCard {...feature} />
                 </motion.div>
