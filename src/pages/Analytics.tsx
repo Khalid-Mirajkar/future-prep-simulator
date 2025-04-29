@@ -22,6 +22,11 @@ const Analytics = () => {
     score: (result.score / result.total_questions) * 100,
   }));
 
+  // Helper function to safely format numbers
+  const formatNumber = (value: any): string => {
+    return typeof value === 'number' ? value.toFixed(2) + '%' : 'N/A';
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
@@ -113,7 +118,7 @@ const Analytics = () => {
                                           Score
                                         </span>
                                         <span className="font-bold">
-                                          {payload[0].value.toFixed(2)}%
+                                          {formatNumber(payload[0].value)}
                                         </span>
                                       </div>
                                     </div>
