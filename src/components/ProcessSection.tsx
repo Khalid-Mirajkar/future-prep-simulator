@@ -16,10 +16,10 @@ const ProcessSection = () => {
   });
   
   const steps = [
-    { number: 1, title: "Choose Your Role", description: "Select your target job role and industry for personalized questions", icon: <UserPlus />, delay: 0 },
-    { number: 2, title: "Customize Focus Areas", description: "Pick skill areas or topics you want to practice", icon: <Search />, delay: 150 },
-    { number: 3, title: "Practice With AI", description: "Complete realistic interview simulations with our AI interviewer", icon: <MousePointer />, delay: 300 },
-    { number: 4, title: "Review & Improve", description: "Get detailed feedback and track your progress over time", icon: <ListChecks />, delay: 450 }
+    { number: 1, title: "Choose Your Role", description: "Select your target job role and industry for personalized questions", icon: <UserPlus size={24} />, delay: 0 },
+    { number: 2, title: "Customize Focus Areas", description: "Pick skill areas or topics you want to practice", icon: <Search size={24} />, delay: 150 },
+    { number: 3, title: "Practice With AI", description: "Complete realistic interview simulations with our AI interviewer", icon: <MousePointer size={24} />, delay: 300 },
+    { number: 4, title: "Review & Improve", description: "Get detailed feedback and track your progress over time", icon: <ListChecks size={24} />, delay: 450 }
   ];
 
   const sectionOpacity = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0, 1, 1, 0]);
@@ -49,18 +49,19 @@ const ProcessSection = () => {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
           {steps.map((step, index) => (
-            <ProcessStep
-              key={index}
-              delay={step.delay}
-              number={step.number}
-              title={step.title}
-              description={step.description}
-              icon={step.icon}
-              progress={scrollYProgress}
-              index={index}
-            />
+            <div key={index} className="min-h-[180px]">
+              <ProcessStep
+                delay={step.delay}
+                number={step.number}
+                title={step.title}
+                description={step.description}
+                icon={step.icon}
+                progress={scrollYProgress}
+                index={index}
+              />
+            </div>
           ))}
         </div>
       </div>
