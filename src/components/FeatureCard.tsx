@@ -11,7 +11,7 @@ interface FeatureCardProps {
 const FeatureCard = ({ title, description, icon: Icon }: FeatureCardProps) => {
   return (
     <motion.div 
-      className="glass-card p-6 rounded-2xl transition-all duration-300"
+      className="glass-card p-6 rounded-2xl transition-all duration-300 h-full flex flex-col"
       whileHover={{ 
         y: -5,
         boxShadow: "0 10px 25px rgba(155, 135, 245, 0.2)"
