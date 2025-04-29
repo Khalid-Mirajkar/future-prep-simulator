@@ -11,6 +11,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Add Dashboard as the first item in the navigation
 const sidebarItems = [
@@ -59,29 +60,33 @@ const sidebarItems = [
 const DashboardSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   return (
-    <aside className="w-64 bg-black/40 backdrop-blur-md h-screen fixed left-0 top-0 border-r border-white/10 z-10">
-      <div className="p-6 border-b border-white/10">
+    <aside className={cn(
+      "bg-black/40 backdrop-blur-md border-r border-white/10 z-10",
+      isMobile ? "w-full h-full" : "w-64 h-screen fixed left-0 top-0"
+    )}>
+      <div className="p-4 md:p-6 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <LayoutDashboard className="h-6 w-6 text-purple-500" />
-          <span className="text-xl font-bold text-white">Dashboard</span>
+          <LayoutDashboard className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
+          <span className="text-lg md:text-xl font-bold text-white">Dashboard</span>
         </div>
       </div>
-      <nav className="p-4">
-        <ul className="space-y-2">
+      <nav className="p-3 md:p-4 overflow-y-auto max-h-[calc(100vh-70px)]">
+        <ul className="space-y-1 md:space-y-2">
           {sidebarItems.map((item) => (
             <li key={item.href}>
               <button
                 onClick={() => navigate(item.href)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-md transition-colors",
+                  "w-full flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-md transition-colors text-sm md:text-base",
                   location.pathname === item.href
                     ? "bg-purple-600/30 text-white"
                     : "hover:bg-white/5 text-gray-400 hover:text-white"
                 )}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className="h-4 w-4 md:h-5 md:w-5" />
                 <span>{item.title}</span>
               </button>
             </li>
