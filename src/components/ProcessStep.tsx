@@ -59,9 +59,9 @@ const ProcessStep = ({
         scale,
         rotateZ: rotation
       }}
-      className="flex items-start gap-6"
+      className="flex flex-col h-full"
     >
-      <div className="flex-shrink-0 relative">
+      <div className="flex-shrink-0 relative mb-4">
         <motion.div 
           className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-neon-purple to-neon-blue text-white font-bold text-xl"
           whileHover={{ scale: 1.1 }}
@@ -87,7 +87,7 @@ const ProcessStep = ({
       
       <motion.div 
         className={cn(
-          "glass-card rounded-xl p-6 flex-1",
+          "glass-card rounded-xl p-6 flex-1 h-full flex flex-col",
           "hover:shadow-[0_0_15px_rgba(155,135,245,0.3)]"
         )}
         whileHover={{ 
