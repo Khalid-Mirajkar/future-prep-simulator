@@ -19,9 +19,9 @@ const GlowingButton = ({
   const baseStyles = "relative font-medium rounded-md transition-all duration-300 focus:outline-none";
   
   const variants = {
-    primary: "bg-gradient-to-r from-neon-purple to-neon-blue text-white hover:shadow-[0_0_20px_rgba(155,135,245,0.7)] animate-pulse-glow",
-    secondary: "bg-dark-lighter text-white border border-neon-purple/30 hover:border-neon-purple/80 hover:shadow-[0_0_15px_rgba(155,135,245,0.5)]",
-    outline: "bg-transparent text-white border border-neon-purple/50 hover:bg-neon-purple/10 hover:shadow-[0_0_10px_rgba(155,135,245,0.4)]"
+    primary: "bg-gradient-to-r from-neon-purple to-neon-blue text-white hover:shadow-[0_0_25px_rgba(155,135,245,0.8)] hover:scale-105",
+    secondary: "bg-dark-lighter text-white border border-neon-purple/30 hover:border-neon-purple/80 hover:shadow-[0_0_15px_rgba(155,135,245,0.6)] hover:scale-105",
+    outline: "bg-transparent text-white border border-neon-purple/50 hover:bg-neon-purple/10 hover:shadow-[0_0_15px_rgba(155,135,245,0.5)] hover:scale-105"
   };
   
   const sizes = {

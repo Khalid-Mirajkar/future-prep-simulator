@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -119,13 +120,13 @@ const Index = () => {
             Land Your Dream Job — Practice Interviews with an AI That Knows Exactly What Recruiters Want
           </p>
           <div className="relative inline-block">
-            <Button 
+            <GlowingButton 
               onClick={handleStartPractice} 
-              className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4 group"
+              variant="primary"
+              className="mb-4"
             >
-              <span>Start Free Practice</span>
-              <span className="absolute -right-3 top-1/2 transform -translate-y-1/2 h-5 w-0.5 bg-white animate-blink opacity-70 group-hover:opacity-100"></span>
-            </Button>
+              Start Free Practice
+            </GlowingButton>
           </div>
           <p className="text-gray-400 text-sm">Already helping 1,200+ students ace their dream interviews</p>
         </div>
@@ -179,13 +180,12 @@ const Index = () => {
             Join thousands of successful candidates who improved their interview performance with AI.
           </p>
           <div className="relative inline-block">
-            <Button 
+            <GlowingButton 
               onClick={handleStartPractice}
-              className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full group"
+              variant="primary"
             >
-              <span>Start Free Practice</span>
-              <span className="absolute -right-3 top-1/2 transform -translate-y-1/2 h-5 w-0.5 bg-white animate-blink opacity-70 group-hover:opacity-100"></span>
-            </Button>
+              Start Free Practice
+            </GlowingButton>
           </div>
         </div>
       </section>
