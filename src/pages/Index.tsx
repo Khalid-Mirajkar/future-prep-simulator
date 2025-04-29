@@ -3,7 +3,7 @@ import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import FeatureCard from "@/components/FeatureCard";
 import TestimonialCarousel from "@/components/TestimonialCarousel";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import GlowingButton from "@/components/GlowingButton";
 import PageTransition from "@/components/PageTransition";
 import CustomLoader from "@/components/CustomLoader";
+import AnimatedHeadingSequence from "@/components/AnimatedHeadingSequence";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -223,12 +224,12 @@ const Index = () => {
               viewport={{ once: true, amount: 0.2 }}
             >
               <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
-                Advanced Interview <span className="text-gradient">Preparation</span>
+                Advanced Interview Prep — <span className="text-gradient">Powered by AI</span>
               </h2>
-              <p className="text-xl text-gray-300 mb-6 font-bold">
-                95% of Candidates Fail Because They're Unprepared — You're Not One of Them.
-              </p>
-              <p className="text-xl text-gray-400">
+              
+              <AnimatedHeadingSequence />
+              
+              <p className="text-xl text-gray-400 mt-6">
                 Train with AI that understands your dream job better than you do — so you walk into interviews with bulletproof confidence.
               </p>
             </motion.div>
