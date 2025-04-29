@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -63,8 +62,7 @@ const Index = () => {
     {
       icon: Target,
       title: "Role-Specific Questions",
-      description: "Know Exactly What You'll Be Asked",
-      tagline: "We scan live job listings to tailor every question to your specific role and company."
+      description: "Know Exactly What You'll Be Asked"
     },
     {
       icon: Settings,
