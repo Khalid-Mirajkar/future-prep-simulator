@@ -27,10 +27,10 @@ const ProcessSection = () => {
   }, []);
   
   const steps = [
-    { number: 1, title: "Choose Your Role", description: "Select your target job role and industry for personalized questions", icon: UserPlus, delay: 0 },
-    { number: 2, title: "Customize Focus Areas", description: "Pick skill areas or topics you want to practice", icon: Search, delay: 150 },
-    { number: 3, title: "Practice With AI", description: "Complete realistic interview simulations with our AI interviewer", icon: MousePointer, delay: 300 },
-    { number: 4, title: "Review & Improve", description: "Get detailed feedback and track your progress over time", icon: ListChecks, delay: 450 }
+    { number: 1, title: "Choose Your Role", description: "Select your target job role and industry for personalized questions", icon: <UserPlus />, delay: 0 },
+    { number: 2, title: "Customize Focus Areas", description: "Pick skill areas or topics you want to practice", icon: <Search />, delay: 150 },
+    { number: 3, title: "Practice With AI", description: "Complete realistic interview simulations with our AI interviewer", icon: <MousePointer />, delay: 300 },
+    { number: 4, title: "Review & Improve", description: "Get detailed feedback and track your progress over time", icon: <ListChecks />, delay: 450 }
   ];
 
   return (
@@ -48,14 +48,12 @@ const ProcessSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {steps.map((step, index) => (
             <ProcessStep
+              key={index}
               delay={step.delay}
               number={step.number}
               title={step.title}
               description={step.description}
               icon={step.icon}
-              // Remove the key prop from here as it's not part of ProcessStepProps
-              // It will be added automatically by React when rendering the list
-              key={index} // This key is for React's rendering optimization
             />
           ))}
         </div>

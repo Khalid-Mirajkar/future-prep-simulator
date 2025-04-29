@@ -16,6 +16,6 @@ export default defineConfig({
     },
   },
   root: ".",
-  base: "./",
-  configFile: "./vite.config.local.ts"
+  base: "./"
+  // Removed the configFile property as it's not supported
 });

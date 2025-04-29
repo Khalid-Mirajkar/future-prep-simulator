@@ -1,12 +1,12 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface ProcessStepProps {
   number: number;
   title: string;
   description: string;
-  icon: JSX.Element;
+  icon: ReactNode;
   delay?: number;
 }
 

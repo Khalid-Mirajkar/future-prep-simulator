@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +8,7 @@ import FeatureCard from "@/components/FeatureCard";
 import TestimonialCarousel from "@/components/TestimonialCarousel";
 import ProcessSection from "@/components/ProcessSection";
 import { Button } from "@/components/ui/button";
-import { GlowingButton } from "@/components/GlowingButton";
+import GlowingButton from "@/components/GlowingButton";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
