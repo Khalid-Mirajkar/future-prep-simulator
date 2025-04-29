@@ -1,59 +1,59 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import DashboardSidebar from "@/components/DashboardSidebar";
-import { Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { Home, Menu } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-export default function ProfilePage() {
+const ProfilePage = () => {
   const { profile, loading, updateProfile } = useProfile();
+  const { toast } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    phone: "",
-    linkedin_url: "",
+    firstName: profile?.first_name || "",
+    lastName: profile?.last_name || "",
+    phone: profile?.phone || "",
+    linkedinUrl: profile?.linkedin_url || "",
   });
-  const [hasChanges, setHasChanges] = useState(false);
-
-  // Update form data when profile is loaded or changes
-  useEffect(() => {
-    if (profile) {
-      setFormData({
-        first_name: profile.first_name || "",
-        last_name: profile.last_name || "",
-        phone: profile.phone || "",
-        linkedin_url: profile.linkedin_url || "",
-      });
-      setHasChanges(false);
-    }
-  }, [profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setHasChanges(true);
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await updateProfile(formData);
+    
+    const success = await updateProfile({
+      first_name: formData.firstName,
+      last_name: formData.lastName,
+      phone: formData.phone,
+      linkedin_url: formData.linkedinUrl,
+    });
+
     if (success) {
-      setHasChanges(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full border-4 border-purple-500 border-t-transparent animate-spin"></div>
-          <p className="mt-4 text-lg">Loading profile...</p>
-        </div>
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -61,7 +61,24 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#0D0D0D] text-white relative">
-        <DashboardSidebar />
+        {!isMobile ? (
+          <DashboardSidebar />
+        ) : (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-4 left-4 z-20"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0 border-r border-white/10 bg-black/80">
+              <DashboardSidebar />
+            </SheetContent>
+          </Sheet>
+        )}
         
         <Button 
           variant="ghost" 
@@ -73,68 +90,68 @@ export default function ProfilePage() {
           <Home className="h-6 w-6" />
         </Button>
         
-        <main className="pl-64">
-          <div className="p-8 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">My Profile</h1>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  className="bg-black/50 border-white/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  className="bg-black/50 border-white/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="bg-black/50 border-white/20"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-                <Input
-                  id="linkedin_url"
-                  name="linkedin_url"
-                  value={formData.linkedin_url}
-                  onChange={handleChange}
-                  className="bg-black/50 border-white/20"
-                  placeholder="https://linkedin.com/in/username"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  disabled={!hasChanges}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
+        <main className={isMobile ? "pt-16" : "pl-64"}>
+          <div className="p-4 md:p-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-6">My Profile</h1>
+            
+            <Card className="bg-black/30 border-white/10 p-4 md:p-6">
+              <form onSubmit={handleSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input 
+                      id="firstName" 
+                      name="firstName" 
+                      value={formData.firstName} 
+                      onChange={handleChange}
+                      className="bg-black/50 border-white/10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input 
+                      id="lastName" 
+                      name="lastName" 
+                      value={formData.lastName} 
+                      onChange={handleChange}
+                      className="bg-black/50 border-white/10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input 
+                      id="phone" 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleChange}
+                      className="bg-black/50 border-white/10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                    <Input 
+                      id="linkedinUrl" 
+                      name="linkedinUrl" 
+                      value={formData.linkedinUrl} 
+                      onChange={handleChange}
+                      className="bg-black/50 border-white/10"
+                    />
+                  </div>
+                </div>
+                
+                <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
                   Save Changes
                 </Button>
-              </div>
-            </form>
+              </form>
+            </Card>
           </div>
         </main>
       </div>
     </ProtectedRoute>
   );
-}
+};
+
+export default ProfilePage;

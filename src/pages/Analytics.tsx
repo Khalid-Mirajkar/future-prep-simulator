@@ -1,139 +1,199 @@
 
-import { Progress } from "@/components/ui/progress";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart2 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { Home, Menu } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 const Analytics = () => {
-  const { data: results = [], isLoading } = useAnalytics();
+  const { data, isLoading, error } = useAnalytics();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Calculate statistics
-  const totalInterviews = results.length;
-  const averageScore = totalInterviews > 0
-    ? Math.round((results.reduce((acc, curr) => acc + (curr.score / curr.total_questions * 100), 0) / totalInterviews))
-    : 0;
+  const chartData = data?.map((result) => ({
+    date: new Date(result.created_at).toLocaleDateString(),
+    score: (result.score / result.total_questions) * 100,
+  }));
 
-  // Format data for the bar chart
-  const chartData = results.slice(0, 10).map(result => ({
-    interview: result.company_name || 'Interview',
-    score: Math.round((result.score / result.total_questions) * 100)
-  })).reverse();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Error Loading Analytics</h2>
+          <p className="text-gray-400 mb-6">
+            There was an error loading your analytics data. Please try again later.
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white relative">
-      <DashboardSidebar />
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute top-4 right-4 z-20"
-        onClick={() => navigate('/')}
-        title="Back to Home"
-      >
-        <Home className="h-6 w-6" />
-      </Button>
-
-      <main className="pl-64">
-        <div className="p-8">
-          <h1 className="text-3xl font-bold mb-8">Analytics</h1>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Interviews Attempted Card */}
-            <Card className="bg-black/40 border border-purple-500/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">
-                  Interviews Attempted
-                </CardTitle>
-                <BarChart2 className="h-4 w-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold text-white">
-                  {isLoading ? "..." : totalInterviews}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Average Score Card */}
-            <Card className="bg-black/40 border border-purple-500/30">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">
-                  Average Score
-                </CardTitle>
-                <BarChart2 className="h-4 w-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-24 h-24">
-                    <Progress
-                      value={averageScore}
-                      className="h-24 w-24 rounded-full [&>div]:rounded-full"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold">
-                      {isLoading ? "..." : `${averageScore}%`}
+    <ProtectedRoute>
+      <div className="min-h-screen bg-[#0D0D0D] text-white relative">
+        {!isMobile ? (
+          <DashboardSidebar />
+        ) : (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-4 left-4 z-20"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0 border-r border-white/10 bg-black/80">
+              <DashboardSidebar />
+            </SheetContent>
+          </Sheet>
+        )}
+        
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="absolute top-4 right-4 z-20"
+          onClick={() => navigate('/')}
+          title="Back to Home"
+        >
+          <Home className="h-6 w-6" />
+        </Button>
+        
+        <main className={isMobile ? "pt-16" : "pl-64"}>
+          <div className="p-4 md:p-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-6">Analytics</h1>
+            
+            <div className="grid grid-cols-1 gap-4 md:gap-6">
+              <Card className="bg-black/30 border-white/10">
+                <CardHeader>
+                  <CardTitle>Interview Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {chartData && chartData.length > 0 ? (
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <XAxis dataKey="date" stroke="#888888" />
+                          <YAxis stroke="#888888" />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex flex-col">
+                                        <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                          Date
+                                        </span>
+                                        <span className="font-bold text-muted-foreground">
+                                          {payload[0].payload.date}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                          Score
+                                        </span>
+                                        <span className="font-bold">
+                                          {payload[0].value.toFixed(2)}%
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="score"
+                            stroke="#8A2BE2"
+                            strokeWidth={2}
+                            activeDot={{ r: 8 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Past Interviews Score Chart */}
-          <Card className="bg-black/40 border border-purple-500/30">
-            <CardHeader>
-              <CardTitle>Past Interview Scores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis 
-                      dataKey="interview" 
-                      stroke="#888" 
-                      fontSize={12}
-                      tickLine={false}
-                    />
-                    <YAxis 
-                      stroke="#888" 
-                      fontSize={12}
-                      tickLine={false}
-                      domain={[0, 100]}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1a1a1a",
-                        border: "1px solid #333",
-                        borderRadius: "4px",
-                        color: "#fff"
-                      }}
-                    />
-                    <Bar 
-                      dataKey="score" 
-                      fill="#9b87f5"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[300px]">
+                      <p className="text-muted-foreground">No interview data available.</p>
+                      <p className="text-sm text-muted-foreground">
+                        Complete practice interviews to see your performance analytics.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Card className="bg-black/30 border-white/10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Average Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {chartData && chartData.length > 0
+                        ? `${(chartData.reduce((acc, item) => acc + item.score, 0) / chartData.length).toFixed(2)}%`
+                        : "N/A"}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-black/30 border-white/10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Interviews Completed
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {chartData?.length || 0}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-black/30 border-white/10">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Best Score
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {chartData && chartData.length > 0
+                        ? `${Math.max(...chartData.map(item => item.score)).toFixed(2)}%`
+                        : "N/A"}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 };
 

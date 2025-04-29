@@ -1,114 +1,77 @@
 
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-
-// Custom Score Ring Component
-const ScoreRing = ({ score, total, size = 40 }: { score: number, total: number, size?: number }) => {
-  const percentage = (score / total) * 100;
-  const strokeWidth = 4;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  const getColor = () => {
-    if (percentage >= 90) return '#22c55e'; // Green for excellent
-    if (percentage >= 80) return '#3b82f6'; // Blue for good
-    if (percentage >= 70) return '#f97316'; // Orange for average
-    return '#ef4444'; // Red for poor
-  };
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
-      <circle 
-        cx={size/2} 
-        cy={size/2} 
-        r={radius} 
-        fill="transparent"
-        stroke="#4a5568" 
-        strokeWidth={strokeWidth}
-      />
-      <circle 
-        cx={size/2} 
-        cy={size/2} 
-        r={radius} 
-        fill="transparent"
-        stroke={getColor()}
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-      />
-      <text 
-        x="50%" 
-        y="50%" 
-        textAnchor="middle" 
-        dy=".3em" 
-        fill="white" 
-        fontSize="12"
-      >
-        {Math.round(percentage)}%
-      </text>
-    </svg>
-  );
-};
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { Home, Menu, Eye, Clock } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const History = () => {
-  const { user } = useAuth();
+  const { data, isLoading, error } = useAnalytics();
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { data: interviewResults = [], isLoading } = useQuery({
-    queryKey: ['interview-results'],
-    queryFn: async () => {
-      if (!user) return [];
-
-      const { data, error } = await supabase
-        .from('interview_results')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const totalPages = Math.ceil(interviewResults.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentResults = interviewResults.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleRowClick = (id: string) => {
-    navigate(`/results/${id}`);
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   if (isLoading) {
     return (
+      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Error Loading History</h2>
+          <p className="text-gray-400 mb-6">
+            There was an error loading your interview history. Please try again later.
+          </p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ProtectedRoute>
       <div className="min-h-screen bg-[#0D0D0D] text-white relative">
-        <DashboardSidebar />
+        {!isMobile ? (
+          <DashboardSidebar />
+        ) : (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="fixed top-4 left-4 z-20"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[240px] p-0 border-r border-white/10 bg-black/80">
+              <DashboardSidebar />
+            </SheetContent>
+          </Sheet>
+        )}
         
         <Button 
           variant="ghost" 
@@ -119,119 +82,70 @@ const History = () => {
         >
           <Home className="h-6 w-6" />
         </Button>
-
-        <main className="pl-64">
-          <div className="p-8">
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-            </div>
+        
+        <main className={isMobile ? "pt-16" : "pl-64"}>
+          <div className="p-4 md:p-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-6">Interview History</h1>
+            
+            {data && data.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {data.map((result) => (
+                  <Card key={result.id} className="bg-black/30 border-white/10">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <CardTitle className="text-lg">
+                          {result.company_name || "Practice Interview"} 
+                          {result.job_title && ` - ${result.job_title}`}
+                        </CardTitle>
+                        <div className="flex items-center text-sm text-gray-400">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {formatDate(result.created_at)}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="text-lg font-semibold">
+                              Score: {((result.score / result.total_questions) * 100).toFixed(2)}%
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              ({result.score}/{result.total_questions} correct)
+                            </div>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex items-center gap-1"
+                          onClick={() => navigate(`/results/${result.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-black/30 border-white/10">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-lg mb-2">No interview history found</p>
+                  <p className="text-gray-400 mb-6 text-center">
+                    Complete practice interviews to build your history.
+                  </p>
+                  <Button onClick={() => navigate('/start-practice')} className="bg-purple-600 hover:bg-purple-700">
+                    Start Practice
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white relative">
-      <DashboardSidebar />
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute top-4 right-4 z-20"
-        onClick={() => navigate('/')}
-        title="Back to Home"
-      >
-        <Home className="h-6 w-6" />
-      </Button>
-
-      <main className="pl-64">
-        <div className="p-8">
-          <h1 className="text-3xl font-bold mb-8">Interview History</h1>
-
-          {interviewResults.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              <p>No interview results found. Start practicing to see your history!</p>
-              <Button 
-                onClick={() => navigate('/start-practice')} 
-                className="mt-4"
-              >
-                Start Practice
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="rounded-lg border border-purple-500/30 bg-black/40">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-purple-400">Date</TableHead>
-                      <TableHead className="text-purple-400">Company</TableHead>
-                      <TableHead className="text-purple-400">Job Title</TableHead>
-                      <TableHead className="text-purple-400 text-center">Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentResults.map((result) => (
-                      <TableRow 
-                        key={result.id}
-                        onClick={() => handleRowClick(result.id)}
-                        className="cursor-pointer hover:bg-purple-500/10 transition-colors"
-                      >
-                        <TableCell className="font-medium">
-                          {format(new Date(result.created_at || ''), 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell>{result.company_name || 'N/A'}</TableCell>
-                        <TableCell>{result.job_title || 'N/A'}</TableCell>
-                        <TableCell className="flex items-center justify-center">
-                          <ScoreRing 
-                            score={result.score} 
-                            total={result.total_questions} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {totalPages > 1 && (
-                <div className="mt-4 flex justify-center">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                      
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+    </ProtectedRoute>
   );
 };
 
