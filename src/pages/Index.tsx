@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { Target, Settings, TrendingUp, Briefcase } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -67,7 +68,7 @@ const Index = () => {
     {
       icon: Settings,
       title: "Smart Feedback",
-      description: "Get instant scoring and improvement tips after each answer."
+      description: "Instant Feedback That Makes You Better, Faster"
     },
     {
       icon: TrendingUp,
