@@ -1,1 +1,6 @@
+
 project_id = "jdknamkvstwuihynclbr"
+
+[auth]
+# Enable the leaked password detection
+enable_leaked_password_detection = true
