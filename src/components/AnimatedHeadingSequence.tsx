@@ -15,26 +15,22 @@ const AnimatedHeadingSequence = () => {
   const isMobile = useIsMobile();
   
   useEffect(() => {
-    // Control the animation sequence
+    // Control the animation sequence with better timing
     const sequenceTimer = setInterval(() => {
-      if (currentIndex < phrases.length - 1) {
-        setIsVisible(false);
-        
-        // Wait for exit animation to complete
-        setTimeout(() => {
-          setCurrentIndex(prevIndex => prevIndex + 1);
-          setIsVisible(true);
-        }, 500); // Half of the transition duration
-      } else {
-        // Stop the animation when we reach the last phrase
-        clearInterval(sequenceTimer);
-      }
-    }, 2000); // Display each phrase for 2 seconds
+      setIsVisible(false);
+      
+      // Wait for exit animation to complete
+      setTimeout(() => {
+        setCurrentIndex(prevIndex => (prevIndex + 1) % phrases.length);
+        setIsVisible(true);
+      }, 600); // Slightly longer exit animation time for smoother transitions
+      
+    }, 3000); // Display each phrase for 3 seconds (more comfortable reading time)
     
     return () => clearInterval(sequenceTimer);
-  }, [currentIndex]);
+  }, []);
   
-  // Variants for the animation
+  // Variants for the animation - slightly slower for better readability
   const variants = {
     enter: { 
       y: 20, 
@@ -44,7 +40,7 @@ const AnimatedHeadingSequence = () => {
       y: 0, 
       opacity: 1,
       transition: { 
-        duration: 0.5,
+        duration: 0.6, // Slightly slower fade in
         ease: "easeOut" 
       }
     },
@@ -52,7 +48,7 @@ const AnimatedHeadingSequence = () => {
       y: -20, 
       opacity: 0,
       transition: { 
-        duration: 0.5,
+        duration: 0.6, // Slightly slower fade out
         ease: "easeIn" 
       }
     }
