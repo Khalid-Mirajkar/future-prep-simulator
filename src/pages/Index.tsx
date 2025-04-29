@@ -9,6 +9,7 @@ import FeatureCard from "@/components/FeatureCard";
 import TestimonialCarousel from "@/components/TestimonialCarousel";
 import ProcessSection from "@/components/ProcessSection";
 import { Button } from "@/components/ui/button";
+import { GlowingButton } from "@/components/GlowingButton";
 
 const Index = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -116,14 +117,17 @@ const Index = () => {
             AI INTERVIEW SIMULATOR
           </h1>
           <p className="text-xl md:text-2xl mb-4 text-gray-300 max-w-3xl mx-auto">
-            The future of interview prep is here. Tailored. Realistic. Powerful.
+            Land Your Dream Job — Practice Interviews with an AI That Knows Exactly What Recruiters Want
           </p>
-          <Button 
-            onClick={handleStartPractice} 
-            className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4"
-          >
-            Start Free Practice
-          </Button>
+          <div className="relative inline-block">
+            <Button 
+              onClick={handleStartPractice} 
+              className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full mb-4 group"
+            >
+              <span>Start Free Practice</span>
+              <span className="absolute -right-3 top-1/2 transform -translate-y-1/2 h-5 w-0.5 bg-white animate-blink opacity-70 group-hover:opacity-100"></span>
+            </Button>
+          </div>
           <p className="text-gray-400 text-sm">Already helping 1,200+ students ace their dream interviews</p>
         </div>
       </section>
@@ -175,12 +179,15 @@ const Index = () => {
           <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Join thousands of successful candidates who improved their interview performance with AI.
           </p>
-          <Button 
-            onClick={handleStartPractice}
-            className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full"
-          >
-            Start Free Practice
-          </Button>
+          <div className="relative inline-block">
+            <Button 
+              onClick={handleStartPractice}
+              className="bg-deep-purple hover:bg-deep-violet transition-colors duration-300 text-white font-medium px-8 py-3 rounded-full group"
+            >
+              <span>Start Free Practice</span>
+              <span className="absolute -right-3 top-1/2 transform -translate-y-1/2 h-5 w-0.5 bg-white animate-blink opacity-70 group-hover:opacity-100"></span>
+            </Button>
+          </div>
         </div>
       </section>
       

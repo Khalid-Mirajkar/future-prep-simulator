@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -109,8 +110,8 @@ export default {
           '50%, 100%': { width: '100%' }
         },
         'blink': {
-          '0%, 100%': { borderColor: 'transparent' },
-          '50%': { borderColor: '#9b87f5' }
+          '0%, 50%': { opacity: '1' },
+          '51%, 100%': { opacity: '0' }
         },
         'flip-in': {
           '0%': { transform: 'rotateX(90deg)', opacity: '0' },
