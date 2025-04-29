@@ -5,10 +5,11 @@ import { motion } from 'framer-motion';
 interface FeatureCardProps {
   title: string;
   description: string;
+  tagline?: string;
   icon: LucideIcon;
 }
 
-const FeatureCard = ({ title, description, icon: Icon }: FeatureCardProps) => {
+const FeatureCard = ({ title, description, tagline, icon: Icon }: FeatureCardProps) => {
   return (
     <motion.div 
       className="glass-card p-6 rounded-2xl transition-all duration-300 h-full flex flex-col"
@@ -30,7 +31,10 @@ const FeatureCard = ({ title, description, icon: Icon }: FeatureCardProps) => {
         <Icon className="w-8 h-8" />
       </motion.div>
       <h3 className="text-xl font-semibold mb-2 text-white">{title}</h3>
-      <p className="text-gray-400 leading-relaxed">{description}</p>
+      <p className="text-lg font-medium mb-1 text-gray-200">{description}</p>
+      {tagline && (
+        <p className="text-gray-400 leading-relaxed text-sm mt-1">{tagline}</p>
+      )}
     </motion.div>
   );
 };
