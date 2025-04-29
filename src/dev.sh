@@ -10,4 +10,3 @@ cd ..
 
 # Run Vite using the local configuration
 node_modules/.bin/vite --config src/vite.config.local.ts
-

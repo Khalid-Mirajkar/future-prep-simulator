@@ -16,6 +16,9 @@ export default defineConfig({
     },
   },
   root: ".",
-  base: "./"
-  // Removed the configFile property as it's not supported
+  base: "./",
+  build: {
+    outDir: "../dist",
+    emptyOutDir: true,
+  }
 });
