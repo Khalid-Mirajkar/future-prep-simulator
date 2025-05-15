@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { Home, Menu, Eye, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { motion } from "framer-motion";
 
 const History = () => {
   const { data, isLoading, error } = useAnalytics();
@@ -85,7 +85,19 @@ const History = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">Interview History</h1>
+            <motion.div 
+              className="text-center max-w-3xl mx-auto mb-6 md:mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+                Interview <span className="text-gradient">History</span>
+              </h1>
+              <p className="text-xl text-gray-300">
+                Review your past interviews and track your progress
+              </p>
+            </motion.div>
             
             {data && data.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">

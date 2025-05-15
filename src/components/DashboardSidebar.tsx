@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { motion } from "framer-motion";
 
 // Add Dashboard as the first item in the navigation
 const sidebarItems = [
@@ -69,27 +70,46 @@ const DashboardSidebar = () => {
     )}>
       <div className="p-4 md:p-6 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <LayoutDashboard className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
-          <span className="text-lg md:text-xl font-bold text-white">Dashboard</span>
+          <motion.div 
+            initial={{ rotate: -10 }}
+            animate={{ rotate: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <LayoutDashboard className="h-5 w-5 md:h-6 md:w-6 text-purple-500" />
+          </motion.div>
+          <span className="text-lg md:text-xl font-bold text-gradient">Dashboard</span>
         </div>
       </div>
       <nav className="p-3 md:p-4 overflow-y-auto max-h-[calc(100vh-70px)]">
         <ul className="space-y-1 md:space-y-2">
-          {sidebarItems.map((item) => (
-            <li key={item.href}>
+          {sidebarItems.map((item, index) => (
+            <motion.li 
+              key={item.href}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+            >
               <button
                 onClick={() => navigate(item.href)}
                 className={cn(
                   "w-full flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-md transition-colors text-sm md:text-base",
                   location.pathname === item.href
-                    ? "bg-purple-600/30 text-white"
+                    ? "bg-gradient-to-r from-purple-600/50 to-purple-500/20 text-white"
                     : "hover:bg-white/5 text-gray-400 hover:text-white"
                 )}
               >
-                <item.icon className="h-4 w-4 md:h-5 md:w-5" />
-                <span>{item.title}</span>
+                <item.icon className={cn(
+                  "h-4 w-4 md:h-5 md:w-5 transition-colors",
+                  location.pathname === item.href
+                    ? "text-purple-400"
+                    : "text-gray-500 group-hover:text-white"
+                )} />
+                <span className={cn(
+                  "transition-colors",
+                  location.pathname === item.href && "text-gradient"
+                )}>{item.title}</span>
               </button>
-            </li>
+            </motion.li>
           ))}
         </ul>
       </nav>
