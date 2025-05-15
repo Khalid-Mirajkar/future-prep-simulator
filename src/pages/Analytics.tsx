@@ -11,6 +11,7 @@ import { Home, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/components/PageHeader";
 
 const Analytics = () => {
   const { data, isLoading, error, analytics } = useAnalytics();
@@ -84,7 +85,10 @@ const Analytics = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">Interview Analytics</h1>
+            <PageHeader 
+              title="Interview Analytics"
+              highlightedWord="Analytics"
+            />
             
             {analytics && data && data.length > 0 ? (
               <div className="grid grid-cols-1 gap-4 md:gap-6">
