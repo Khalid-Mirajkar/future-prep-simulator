@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -69,10 +70,19 @@ const Dashboard = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Welcome to your Dashboard</h1>
-            <p className="text-gray-400 mb-6 md:mb-8">
-              Select an option from the {isMobile ? "menu" : "sidebar"} to get started.
-            </p>
+            <motion.div 
+              className="text-center max-w-3xl mx-auto mb-6 md:mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+                Welcome to your <span className="text-gradient">Dashboard</span>
+              </h1>
+              <p className="text-xl text-gray-300">
+                Select an option from the {isMobile ? "menu" : "sidebar"} to get started.
+              </p>
+            </motion.div>
             
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
               {/* Quick Stats Card */}
