@@ -15,10 +15,6 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
   async function fetchProfile() {
     try {
       setLoading(true);
@@ -72,6 +68,10 @@ export function useProfile() {
     }
   }
 
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
   async function updateProfile(updates: Partial<Profile>) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,5 +104,5 @@ export function useProfile() {
     }
   }
 
-  return { profile, loading, updateProfile };
+  return { profile, loading, updateProfile, fetchProfile };
 }

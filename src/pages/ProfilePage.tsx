@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,42 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const ProfilePage = () => {
-  const { profile, loading, updateProfile } = useProfile();
+  const { profile, loading, updateProfile, fetchProfile } = useProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [formData, setFormData] = useState({
-    firstName: profile?.first_name || "",
-    lastName: profile?.last_name || "",
-    phone: profile?.phone || "",
-    linkedinUrl: profile?.linkedin_url || "",
+    firstName: "",
+    lastName: "",
+    phone: "",
+    linkedinUrl: "",
   });
+
+  // Update form data when profile data is loaded or changed
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        phone: profile.phone || "",
+        linkedinUrl: profile.linkedin_url || "",
+      });
+    }
+  }, [profile]);
+
+  // Refetch profile data when page is focused
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [fetchProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -47,6 +71,9 @@ const ProfilePage = () => {
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
+      
+      // Refetch profile data to ensure we have the latest data
+      fetchProfile();
     }
   };
 
