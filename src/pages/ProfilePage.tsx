@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { Home, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { motion } from "framer-motion";
 
 const ProfilePage = () => {
   const { profile, loading, updateProfile, fetchProfile } = useProfile();
@@ -119,7 +120,19 @@ const ProfilePage = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">My Profile</h1>
+            <motion.div 
+              className="text-center max-w-3xl mx-auto mb-6 md:mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+                My <span className="text-gradient">Profile</span>
+              </h1>
+              <p className="text-xl text-gray-300">
+                Update your personal information and contact details
+              </p>
+            </motion.div>
             
             <Card className="bg-black/30 border-white/10 p-4 md:p-6">
               <form onSubmit={handleSubmit}>

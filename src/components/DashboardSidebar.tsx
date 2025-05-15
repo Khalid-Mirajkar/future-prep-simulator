@@ -63,6 +63,13 @@ const DashboardSidebar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
 
+  const handleNavigation = (href: string) => {
+    // Only navigate if we're not already on this page
+    if (location.pathname !== href) {
+      navigate(href);
+    }
+  };
+
   return (
     <aside className={cn(
       "bg-black/40 backdrop-blur-md border-r border-white/10 z-10",
@@ -90,7 +97,7 @@ const DashboardSidebar = () => {
               transition={{ duration: 0.3, delay: index * 0.05 }}
             >
               <button
-                onClick={() => navigate(item.href)}
+                onClick={() => handleNavigation(item.href)}
                 className={cn(
                   "w-full flex items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-md transition-colors text-sm md:text-base",
                   location.pathname === item.href
