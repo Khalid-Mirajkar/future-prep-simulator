@@ -155,21 +155,70 @@ serve(async (req) => {
         jobCategory = "customer_service";
       }
 
-      // Create an appropriate prompt based on job category
-      let promptBase = `Generate 10 multiple choice interview questions with 4 options each for a ${jobTitle} position at ${companyName}. `;
+      // Create an improved prompt based on job category that focuses on realistic interview questions
+      let promptBase = `Generate 10 multiple choice interview questions for a ${jobTitle} position at ${companyName}. 
+
+QUESTION TYPES TO INCLUDE (distribute evenly):
+1. Behavioral questions (teamwork, communication, adaptability)
+2. Situational/decision-making questions (role-specific scenarios)
+3. Light conceptual knowledge (no deep technical questions)
+4. Communication & collaboration skills
+
+FOCUS AREAS:
+- Real interview-style questions that assess fit for the role
+- Questions that reveal the candidate's soft skills and decision-making
+- Company culture alignment for ${companyName}
+- Role-specific scenarios a ${jobTitle} would encounter
+
+ABSOLUTELY AVOID:
+- Quiz-style technical questions
+- Computer science exam questions
+- Algorithm details or low-level coding questions
+- Questions that feel like university exams
+
+Each question MUST have 4 options with one correct answer and 3 plausible distractors.
+Include a brief explanation of why the correct answer aligns with what interviewers look for.`;
 
       switch (jobCategory) {
         case "technical":
-          promptBase += "Focus on technical skills, problem-solving abilities, and relevant technologies, but avoid overly complex coding questions or highly specialized knowledge unless directly relevant to the job title.";
+          promptBase += `
+          
+For technical roles, focus on:
+- Problem-solving approach rather than specific algorithms
+- Communication of technical concepts
+- Handling of technical disagreements
+- Prioritization of technical tasks
+- Very light domain knowledge (no deep CS theory)`;
           break;
         case "management":
-          promptBase += "Focus on leadership, team management, conflict resolution, strategic thinking, and relevant business metrics.";
+          promptBase += `
+          
+For management roles, focus on:
+- Leadership style and team management
+- Conflict resolution approaches
+- Resource allocation and prioritization
+- Performance management
+- Strategic thinking and decision-making`;
           break;
         case "customer_service":
-          promptBase += "Focus on customer interactions, conflict resolution, company policies, product knowledge, and service quality. Questions should be practical and scenario-based, not technical.";
+          promptBase += `
+          
+For customer service roles, focus on:
+- Handling difficult customer interactions
+- Prioritizing service requests
+- Communication style and tone
+- Problem-solving in service contexts
+- Maintaining service quality under pressure`;
           break;
         default:
-          promptBase += "Focus on soft skills, company culture fit, and general job knowledge. Keep questions practical and relevant to day-to-day job responsibilities.";
+          promptBase += `
+          
+Focus on:
+- Role-specific situations
+- Professional communication and teamwork
+- Adaptability and problem-solving
+- Work style and priorities
+- Company culture alignment`;
       }
 
       promptBase += `
@@ -180,32 +229,59 @@ serve(async (req) => {
         "question": "Question text",
         "options": ["Option A", "Option B", "Option C", "Option D"],
         "correctAnswer": number from 0-3 representing the index of the correct option,
-        "explanation": "Explanation of why this is the correct answer"
+        "explanation": "Explanation of why this is the best answer from an interviewer's perspective"
       }
       
       IMPORTANT RULES:
       1. Every question MUST have EXACTLY 4 options - no more, no fewer.
       2. The correctAnswer should be RANDOMLY distributed (not always the same position).
       3. Questions must be HIGHLY RELEVANT to both the job title and company.
-      4. Make the questions challenging but fair.
-      5. Include company-specific knowledge where appropriate.
-      6. Avoid questions that require deep specialized knowledge unless directly relevant to the role.
-      7. For customer service roles, focus on practical scenarios, NOT technical questions.
-      8. Seed: ${seed} (use this to generate different questions).
+      4. The questions should feel like a REAL INTERVIEW, not a knowledge test.
+      5. Include company-specific context where appropriate.
+      6. Seed: ${seed} (use this to generate different questions).
       `;
 
       console.log("Calling OpenAI API with prompt");
       
       try {
-        // Use a cheaper, lighter model to avoid quota issues
-        const chatCompletion = await openai.chat.completions.create({
-          model: "gpt-4o-mini", // Using a lighter model to avoid quota issues
-          temperature: 0.7,
-          messages: [
-            { role: "system", content: "You are an expert job interview coach who creates realistic interview questions." },
-            { role: "user", content: promptBase }
-          ],
-        });
+        // Use a cost-effective model with retry logic
+        let chatCompletion = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts && !chatCompletion) {
+          try {
+            attempts++;
+            // Try with gpt-4o-mini first as it's more cost-effective
+            chatCompletion = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              temperature: 0.7,
+              messages: [
+                { role: "system", content: "You are an expert job interviewer who creates realistic interview questions." },
+                { role: "user", content: promptBase }
+              ],
+            });
+          } catch (modelError) {
+            console.log(`Attempt ${attempts} failed with model gpt-4o-mini:`, modelError.message);
+            
+            // If we've tried all attempts with the primary model, try a fallback
+            if (attempts === maxAttempts) {
+              console.log("Trying fallback to gpt-3.5-turbo model");
+              chatCompletion = await openai.chat.completions.create({
+                model: "gpt-3.5-turbo",
+                temperature: 0.7,
+                messages: [
+                  { role: "system", content: "You are an expert job interviewer who creates realistic interview questions." },
+                  { role: "user", content: promptBase }
+                ],
+              });
+            }
+          }
+        }
+
+        if (!chatCompletion) {
+          throw new Error("Failed to generate questions after multiple attempts");
+        }
 
         // Extract content from the response
         const content = chatCompletion.choices[0].message.content;
@@ -251,7 +327,7 @@ serve(async (req) => {
             
             // Ensure there is an explanation
             if (!q.explanation) {
-              q.explanation = "This is the most appropriate answer for this situation.";
+              q.explanation = "This is the most appropriate answer for this interview question.";
             }
             
             return q;
