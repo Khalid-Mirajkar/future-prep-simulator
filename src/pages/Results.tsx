@@ -36,6 +36,10 @@ const Results = () => {
   const handleTakeAnotherTest = () => {
     navigate('/start-practice');
   };
+  
+  const handleBackToHome = () => {
+    navigate('/');
+  };
 
   if (isLoading) {
     return (
@@ -68,6 +72,7 @@ const Results = () => {
         testResult={testResult}
         handleRestartTest={handleRestartTest}
         handleTakeAnotherTest={handleTakeAnotherTest}
+        handleBackToHome={handleBackToHome}
       />
     </div>
   );
