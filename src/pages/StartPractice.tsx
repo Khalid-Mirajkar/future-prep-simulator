@@ -48,15 +48,8 @@ const StartPractice = () => {
   }, []);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Show coming soon message instead of starting the test
-    toast({
-      title: "Coming Soon",
-      description: "This feature is currently under development. Check back later!",
-      duration: 5000,
-    })
+    // Remove the coming soon toast and enable actual functionality
     
-    // Uncomment this when the feature is ready
-    /*
     const isValid = await validateCompany(values.companyName)
     
     if (!isValid) {
@@ -79,7 +72,6 @@ const StartPractice = () => {
     } else {
       navigate("/coming-soon")
     }
-    */
   }
 
   const handleBlur = async () => {
@@ -106,12 +98,7 @@ const StartPractice = () => {
         <p className="text-center text-gray-400 mb-8">Fill in the details below to customize your interview experience</p>
         
         <div className="max-w-xl mx-auto glass-card p-8 rounded-xl">
-          <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-700/30 rounded-lg">
-            <h3 className="text-yellow-400 font-medium mb-1">Coming Soon</h3>
-            <p className="text-sm text-gray-300">
-              Our interview testing features are currently under development. Please check back later for a fully functional experience!
-            </p>
-          </div>
+          {/* Remove coming soon notice */}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -231,7 +218,7 @@ const StartPractice = () => {
                     Validating...
                   </>
                 ) : (
-                  'Continue (Coming Soon)'
+                  'Start Practice Test'
                 )}
               </Button>
             </form>
