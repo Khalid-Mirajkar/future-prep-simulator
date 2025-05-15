@@ -4,12 +4,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MCQQuestion, TestResult } from "@/types/mcq";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useMCQTest = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { companyName, jobTitle } = location.state || {};
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -23,6 +25,7 @@ export const useMCQTest = () => {
     Math.floor(Math.random() * 1000000) + Date.now() % 10000
   );
   const [isIncompatibleJob, setIsIncompatibleJob] = useState(false);
+  const [resultSaved, setResultSaved] = useState(false);
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -155,13 +158,53 @@ export const useMCQTest = () => {
     }));
 
     const score = questions.length - incorrect.length;
-
-    setTestResult({
+    
+    const result = {
       score,
       totalQuestions: questions.length,
       incorrectAnswers: incorrect
-    });
+    };
+
+    setTestResult(result);
     setShowResults(true);
+    
+    // Save results to database if user is authenticated
+    if (user) {
+      saveResultToDatabase(score, questions.length);
+    }
+  };
+  
+  const saveResultToDatabase = async (score: number, totalQuestions: number) => {
+    if (resultSaved) return; // Prevent duplicate saves
+    
+    try {
+      const { error: saveError } = await supabase
+        .from('interview_results')
+        .insert({
+          user_id: user?.id,
+          score,
+          total_questions: totalQuestions,
+          company_name: companyName,
+          job_title: jobTitle
+        });
+        
+      if (saveError) {
+        console.error('Error saving test results:', saveError);
+        toast({
+          variant: "destructive",
+          title: "Failed to save results",
+          description: "Your test results couldn't be saved to your history."
+        });
+      } else {
+        setResultSaved(true);
+        toast({
+          title: "Results saved",
+          description: "Your test results have been saved to your history."
+        });
+      }
+    } catch (err) {
+      console.error('Error in saveResultToDatabase:', err);
+    }
   };
 
   const handleRetry = () => {
@@ -176,6 +219,7 @@ export const useMCQTest = () => {
     setTestResult(null);
     setQuestionSeed(Math.floor(Math.random() * 1000000) + Date.now() % 10000);
     setIsLoading(true);
+    setResultSaved(false);
   };
 
   const handleTakeAnotherTest = () => {
@@ -184,6 +228,10 @@ export const useMCQTest = () => {
 
   const handleBackToStart = () => {
     navigate('/start-practice');
+  };
+  
+  const handleBackToHome = () => {
+    navigate('/');
   };
 
   return {
@@ -202,5 +250,6 @@ export const useMCQTest = () => {
     handleRestartTest,
     handleTakeAnotherTest,
     handleBackToStart,
+    handleBackToHome,
   };
 };

@@ -1,8 +1,9 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, BarChart, Bar, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -12,20 +13,18 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
 const Analytics = () => {
-  const { data, isLoading, error } = useAnalytics();
+  const { data, isLoading, error, analytics } = useAnalytics();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const chartData = data?.map((result) => ({
-    date: new Date(result.created_at).toLocaleDateString(),
-    score: (result.score / result.total_questions) * 100,
-  }));
 
   // Helper function to safely format numbers
   const formatNumber = (value: any): string => {
     return typeof value === 'number' ? value.toFixed(2) + '%' : 'N/A';
   };
+
+  // Colors for the bar chart
+  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE'];
 
   if (isLoading) {
     return (
@@ -85,116 +84,252 @@ const Analytics = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">Analytics</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-6">Interview Analytics</h1>
             
-            <div className="grid grid-cols-1 gap-4 md:gap-6">
-              <Card className="bg-black/30 border-white/10">
-                <CardHeader>
-                  <CardTitle>Interview Performance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {chartData && chartData.length > 0 ? (
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <XAxis dataKey="date" stroke="#888888" />
-                          <YAxis stroke="#888888" />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div className="flex flex-col">
-                                        <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                          Date
-                                        </span>
-                                        <span className="font-bold text-muted-foreground">
-                                          {payload[0].payload.date}
-                                        </span>
-                                      </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                          Score
-                                        </span>
-                                        <span className="font-bold">
-                                          {formatNumber(payload[0].value)}
-                                        </span>
+            {analytics && data && data.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4 md:gap-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Total Interviews
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {analytics.totalInterviews}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Average Score
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {formatNumber(analytics.averageScore)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Best Score
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        {formatNumber(analytics.bestScore)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        Latest Interview
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-lg font-bold">
+                        {data[0]?.created_at 
+                          ? new Date(data[0].created_at).toLocaleDateString() 
+                          : 'N/A'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Performance Chart */}
+                <Card className="bg-black/30 border-white/10">
+                  <CardHeader>
+                    <CardTitle>Interview Performance Trend</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {analytics.scoreByDate.length > 0 ? (
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={analytics.scoreByDate}>
+                            <XAxis dataKey="date" stroke="#888888" />
+                            <YAxis stroke="#888888" domain={[0, 100]} />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  return (
+                                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div className="flex flex-col">
+                                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                            Date
+                                          </span>
+                                          <span className="font-bold text-muted-foreground">
+                                            {payload[0].payload.date}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                            Score
+                                          </span>
+                                          <span className="font-bold">
+                                            {formatNumber(payload[0].value)}
+                                          </span>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="score"
-                            stroke="#8A2BE2"
-                            strokeWidth={2}
-                            activeDot={{ r: 8 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-[300px]">
-                      <p className="text-muted-foreground">No interview data available.</p>
-                      <p className="text-sm text-muted-foreground">
-                        Complete practice interviews to see your performance analytics.
-                      </p>
-                    </div>
-                  )}
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="score"
+                              stroke="#8A2BE2"
+                              strokeWidth={2}
+                              activeDot={{ r: 8 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-[300px]">
+                        <p className="text-muted-foreground">Not enough data to show performance trends.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                {/* Company Performance */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader>
+                      <CardTitle>Performance by Company</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {analytics.scoreByCompany.length > 0 ? (
+                        <div className="h-[300px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={analytics.scoreByCompany}>
+                              <XAxis dataKey="company" stroke="#888888" />
+                              <YAxis stroke="#888888" domain={[0, 100]} />
+                              <Tooltip 
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    return (
+                                      <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                        <div className="grid grid-cols-1 gap-2">
+                                          <div className="flex flex-col">
+                                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                              Company
+                                            </span>
+                                            <span className="font-bold text-muted-foreground">
+                                              {payload[0].payload.company}
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-col">
+                                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                              Avg. Score
+                                            </span>
+                                            <span className="font-bold">
+                                              {formatNumber(payload[0].value)}
+                                            </span>
+                                          </div>
+                                          <div className="flex flex-col">
+                                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                              Interviews
+                                            </span>
+                                            <span className="font-bold">
+                                              {payload[0].payload.count}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <Bar dataKey="averageScore" name="Average Score">
+                                {analytics.scoreByCompany.map((entry, index) => (
+                                  <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={colors[index % colors.length]}
+                                  />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[300px]">
+                          <p className="text-muted-foreground">Not enough data to show company performance.</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Recent Interviews */}
+                  <Card className="bg-black/30 border-white/10">
+                    <CardHeader>
+                      <CardTitle>Recent Interviews</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Company</TableHead>
+                            <TableHead>Position</TableHead>
+                            <TableHead>Score</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {data.slice(0, 5).map((result) => (
+                            <TableRow key={result.id}>
+                              <TableCell className="font-medium">
+                                {new Date(result.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>{result.company_name || 'N/A'}</TableCell>
+                              <TableCell>{result.job_title || 'N/A'}</TableCell>
+                              <TableCell>
+                                {formatNumber((result.score / result.total_questions) * 100)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {data.length > 5 && (
+                        <div className="mt-4 text-center">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => navigate('/dashboard/history')}
+                          >
+                            View All Interviews
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            ) : (
+              <Card className="bg-black/30 border-white/10">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <p className="text-lg mb-2">No interview data available</p>
+                  <p className="text-gray-400 mb-6 text-center">
+                    Complete practice interviews to build your analytics.
+                  </p>
+                  <Button onClick={() => navigate('/start-practice')} className="bg-purple-600 hover:bg-purple-700">
+                    Start Practice
+                  </Button>
                 </CardContent>
               </Card>
-              
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Card className="bg-black/30 border-white/10">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Average Score
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {chartData && chartData.length > 0
-                        ? `${(chartData.reduce((acc, item) => acc + item.score, 0) / chartData.length).toFixed(2)}%`
-                        : "N/A"}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-black/30 border-white/10">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Interviews Completed
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {chartData?.length || 0}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-black/30 border-white/10">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Best Score
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {chartData && chartData.length > 0
-                        ? `${Math.max(...chartData.map(item => item.score)).toFixed(2)}%`
-                        : "N/A"}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
         </main>
       </div>

@@ -40,6 +40,7 @@ const MCQTest: React.FC = () => {
     handleRestartTest,
     handleTakeAnotherTest,
     handleBackToStart,
+    handleBackToHome,
   } = useMCQTest();
 
   if (isLoading) return <MCQTestLoading />;
@@ -101,6 +102,7 @@ const MCQTest: React.FC = () => {
             testResult={testResult}
             handleRestartTest={handleRestartTest}
             handleTakeAnotherTest={handleTakeAnotherTest}
+            handleBackToHome={handleBackToHome}
           />
         ) : (
           <div className="max-w-2xl mx-auto">

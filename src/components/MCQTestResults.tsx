@@ -1,19 +1,21 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { RotateCcw, ArrowLeft } from "lucide-react";
+import { RotateCcw, ArrowLeft, Home } from "lucide-react";
 import { TestResult } from '@/types/mcq';
 
 interface MCQTestResultsProps {
   testResult: TestResult;
   handleRestartTest: () => void;
   handleTakeAnotherTest: () => void;
+  handleBackToHome: () => void;
 }
 
 const MCQTestResults: React.FC<MCQTestResultsProps> = ({
   testResult,
   handleRestartTest,
-  handleTakeAnotherTest
+  handleTakeAnotherTest,
+  handleBackToHome
 }) => {
   return (
     <div className="container mx-auto px-6">
@@ -57,7 +59,7 @@ const MCQTestResults: React.FC<MCQTestResultsProps> = ({
             variant="default"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
-            Restart Test (New Questions)
+            Restart Test
           </Button>
           <Button 
             onClick={handleTakeAnotherTest} 
@@ -66,6 +68,14 @@ const MCQTestResults: React.FC<MCQTestResultsProps> = ({
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Take Another Test
+          </Button>
+          <Button 
+            onClick={handleBackToHome} 
+            className="flex-1"
+            variant="secondary"
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Back to Home
           </Button>
         </div>
       </div>
