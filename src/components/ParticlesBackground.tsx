@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 
 type Particle = {
@@ -9,6 +10,18 @@ type Particle = {
   opacity: number;
   color: string;
   type: 'star' | 'planet' | 'dust';
+};
+
+type GradientStroke = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  width: number;
+  opacity: number;
+  speed: number;
+  direction: number;
+  color: string;
 };
 
 const ParticlesBackground = () => {
@@ -23,11 +36,13 @@ const ParticlesBackground = () => {
     
     let animationFrameId: number;
     let particles: Particle[] = [];
+    let gradientStrokes: GradientStroke[] = [];
     
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       initParticles();
+      initGradientStrokes();
     };
     
     const initParticles = () => {
@@ -63,19 +78,60 @@ const ParticlesBackground = () => {
       }
     };
     
+    const initGradientStrokes = () => {
+      gradientStrokes = [];
+      const strokesCount = Math.min(Math.floor(window.innerWidth * 0.01), 12);
+      const gradientColors = [
+        '#9b87f5',
+        '#6A0DAD',
+        '#7B2CBF',
+        '#D6BCFA',
+        '#8A4FFF'
+      ];
+      
+      for (let i = 0; i < strokesCount; i++) {
+        const x1 = Math.random() * canvas.width;
+        const y1 = Math.random() * canvas.height * 0.8;
+        
+        gradientStrokes.push({
+          x1,
+          y1,
+          x2: x1 + (Math.random() * 200) + 200,
+          y2: y1 + (Math.random() * 200) - 100,
+          width: Math.random() * 2 + 1,
+          opacity: Math.random() * 0.15 + 0.05,
+          speed: Math.random() * 0.2 + 0.1,
+          direction: Math.random() > 0.5 ? 1 : -1,
+          color: gradientColors[Math.floor(Math.random() * gradientColors.length)]
+        });
+      }
+    };
+    
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#0D0D0D');
-      gradient.addColorStop(0.25, '#1a1025');
-      gradient.addColorStop(0.5, '#2D1B41');
-      gradient.addColorStop(0.75, '#3D2459');
-      gradient.addColorStop(1, '#4A0E4E');
+      // Draw base gradient background
+      const baseGradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width
+      );
+      baseGradient.addColorStop(0, '#0D0D0D');
+      baseGradient.addColorStop(0.2, '#121318');
+      baseGradient.addColorStop(0.6, '#1a1025');
+      baseGradient.addColorStop(0.8, '#2D1B41');
+      baseGradient.addColorStop(1, '#4A0E4E');
       
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = baseGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
+      // Draw animated gradient strokes
+      drawGradientStrokes();
+      
+      // Draw particles
       particles.forEach((particle) => {
         particle.x += particle.speedX;
         particle.y += particle.speedY;
@@ -97,8 +153,10 @@ const ParticlesBackground = () => {
           particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
           
+          ctx.beginPath();
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fill();
         } else if (particle.type === 'planet') {
           const color = hexToRgba(particle.color, particle.opacity);
           const midColor = hexToRgba(particle.color, 0.4);
@@ -107,19 +165,21 @@ const ParticlesBackground = () => {
           particleGradient.addColorStop(0.5, midColor);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
+          ctx.beginPath();
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, Math.PI * 2);
+          ctx.fill();
         } else {
           const color = hexToRgba(particle.color, particle.opacity);
           
           particleGradient.addColorStop(0, color);
           particleGradient.addColorStop(1, 'rgba(155, 135, 245, 0)');
           
+          ctx.beginPath();
           ctx.fillStyle = particleGradient;
           ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          ctx.fill();
         }
-        
-        ctx.fill();
       });
       
       ctx.strokeStyle = 'rgba(155, 135, 245, 0.08)';
@@ -143,6 +203,42 @@ const ParticlesBackground = () => {
       }
       
       animationFrameId = requestAnimationFrame(drawParticles);
+    };
+    
+    const drawGradientStrokes = () => {
+      gradientStrokes.forEach((stroke) => {
+        // Animate stroke position
+        stroke.y1 += stroke.speed * stroke.direction;
+        stroke.y2 += stroke.speed * stroke.direction;
+        
+        // Reverse direction when reaching boundaries
+        if (stroke.y1 < 0 || stroke.y1 > canvas.height) {
+          stroke.direction *= -1;
+        }
+        
+        // Draw beautiful gradient stroke
+        const strokeGradient = ctx.createLinearGradient(
+          stroke.x1, stroke.y1, stroke.x2, stroke.y2
+        );
+        
+        strokeGradient.addColorStop(0, hexToRgba(stroke.color, 0));
+        strokeGradient.addColorStop(0.5, hexToRgba(stroke.color, stroke.opacity));
+        strokeGradient.addColorStop(1, hexToRgba(stroke.color, 0));
+        
+        ctx.beginPath();
+        ctx.strokeStyle = strokeGradient;
+        ctx.lineWidth = stroke.width;
+        ctx.moveTo(stroke.x1, stroke.y1);
+        
+        // Create curved stroke
+        const cp1x = stroke.x1 + (stroke.x2 - stroke.x1) * 0.4;
+        const cp1y = stroke.y1 + (stroke.y2 - stroke.y1) * 0.1;
+        const cp2x = stroke.x1 + (stroke.x2 - stroke.x1) * 0.6;
+        const cp2y = stroke.y1 + (stroke.y2 - stroke.y1) * 0.9;
+        
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, stroke.x2, stroke.y2);
+        ctx.stroke();
+      });
     };
     
     const hexToRgba = (hex: string, opacity: number): string => {
