@@ -20,6 +20,11 @@ const PageHeader = ({
     
     const parts = title.split(highlightedWord);
     
+    if (parts.length === 1) {
+      // If highlightedWord is not found in title, apply gradient to whole title
+      return <span className="text-gradient">{title}</span>;
+    }
+    
     return (
       <>
         {parts[0]}
@@ -36,7 +41,7 @@ const PageHeader = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
+      <h1 className="text-3xl md:text-5xl font-bold mb-4">
         {renderTitle()}
       </h1>
       {description && (
