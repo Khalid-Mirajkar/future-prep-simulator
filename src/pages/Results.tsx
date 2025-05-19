@@ -1,8 +1,8 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MCQTestResults from "@/components/MCQTestResults";
+import { TestResult } from "@/types/mcq";
 
 const Results = () => {
   const { id } = useParams();
@@ -20,12 +20,14 @@ const Results = () => {
         .single();
 
       if (error) throw error;
+      
+      // Ensure we handle the time_seconds field correctly
       return {
         score: data.score,
         totalQuestions: data.total_questions,
         timeInSeconds: data.time_seconds || 0,
         incorrectAnswers: [] // This would need to be expanded based on your data structure
-      };
+      } as TestResult;
     },
     enabled: !!id
   });

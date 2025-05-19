@@ -16,6 +16,7 @@ export type Database = {
           id: string
           job_title: string | null
           score: number
+          time_seconds: number | null
           total_questions: number
           user_id: string
         }
@@ -25,6 +26,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           score: number
+          time_seconds?: number | null
           total_questions: number
           user_id: string
         }
@@ -34,6 +36,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           score?: number
+          time_seconds?: number | null
           total_questions?: number
           user_id?: string
         }
