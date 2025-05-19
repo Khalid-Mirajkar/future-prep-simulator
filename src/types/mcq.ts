@@ -10,6 +10,7 @@ export interface MCQQuestion {
 export interface TestResult {
   score: number;
   totalQuestions: number;
+  timeInSeconds: number;
   incorrectAnswers: {
     questionId: number;
     question: string;
@@ -18,3 +19,4 @@ export interface TestResult {
     explanation: string;
   }[];
 }
+

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,13 @@ export const useMCQTest = () => {
   );
   const [isIncompatibleJob, setIsIncompatibleJob] = useState(false);
   const [resultSaved, setResultSaved] = useState(false);
+  
+  // Timer related state
+  const [initialSeconds, setInitialSeconds] = useState(600); // 10 minutes
+  const [remainingSeconds, setRemainingSeconds] = useState(600);
+  const [timerActive, setTimerActive] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!companyName || !jobTitle) {
@@ -120,6 +127,11 @@ export const useMCQTest = () => {
             title: "Questions Generated Successfully",
             description: `${validatedData.length} questions ready for your practice test`
           });
+          
+          // Start timer only if we have valid questions
+          if (validatedData.length > 1) {
+            startTimer();
+          }
         }
         
       } catch (err) {
@@ -137,7 +149,36 @@ export const useMCQTest = () => {
     };
 
     loadQuestions();
+    
+    // Cleanup timer on unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [companyName, jobTitle, toast, retryCount, questionSeed]);
+
+  const startTimer = useCallback(() => {
+    setTimerActive(true);
+    setStartTime(Date.now());
+    
+    timerRef.current = setInterval(() => {
+      setRemainingSeconds(prev => {
+        if (prev <= 1) {
+          // Time's up - auto submit
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+          }
+          // Only auto-submit if we have at least one answer
+          if (Object.keys(selectedAnswers).length > 0) {
+            evaluateTest();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [selectedAnswers]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOptionSelect = (questionId: number, optionIndex: number) => {
     setSelectedAnswers(prev => ({
@@ -146,7 +187,16 @@ export const useMCQTest = () => {
     }));
   };
 
-  const evaluateTest = () => {
+  const evaluateTest = useCallback(() => {
+    // Stop the timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      setTimerActive(false);
+    }
+    
+    // Calculate time taken
+    const timeInSeconds = initialSeconds - remainingSeconds;
+    
     const incorrect = questions.filter(
       (q) => selectedAnswers[q.id] !== q.correctAnswer
     ).map(q => ({
@@ -162,6 +212,7 @@ export const useMCQTest = () => {
     const result = {
       score,
       totalQuestions: questions.length,
+      timeInSeconds,
       incorrectAnswers: incorrect
     };
 
@@ -170,11 +221,11 @@ export const useMCQTest = () => {
     
     // Save results to database if user is authenticated
     if (user) {
-      saveResultToDatabase(score, questions.length);
+      saveResultToDatabase(score, questions.length, timeInSeconds);
     }
-  };
+  }, [questions, selectedAnswers, initialSeconds, remainingSeconds, user]);
   
-  const saveResultToDatabase = async (score: number, totalQuestions: number) => {
+  const saveResultToDatabase = async (score: number, totalQuestions: number, timeInSeconds: number) => {
     if (resultSaved) return; // Prevent duplicate saves
     
     try {
@@ -185,7 +236,8 @@ export const useMCQTest = () => {
           score,
           total_questions: totalQuestions,
           company_name: companyName,
-          job_title: jobTitle
+          job_title: jobTitle,
+          time_seconds: timeInSeconds
         });
         
       if (saveError) {
@@ -220,6 +272,7 @@ export const useMCQTest = () => {
     setQuestionSeed(Math.floor(Math.random() * 1000000) + Date.now() % 10000);
     setIsLoading(true);
     setResultSaved(false);
+    setRemainingSeconds(600);
   };
 
   const handleTakeAnotherTest = () => {
@@ -243,6 +296,8 @@ export const useMCQTest = () => {
     showResults,
     testResult,
     isIncompatibleJob,
+    initialSeconds,
+    remainingSeconds,
     handleOptionSelect,
     setCurrentQuestion,
     evaluateTest,

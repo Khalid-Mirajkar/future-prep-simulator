@@ -27,6 +27,13 @@ const History = () => {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+  
+  const formatTime = (seconds: number | null) => {
+    if (seconds === null || seconds === 0) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   if (isLoading) {
     return (
@@ -118,6 +125,11 @@ const History = () => {
                             <div className="text-sm text-gray-400">
                               ({result.score}/{result.total_questions} correct)
                             </div>
+                          </div>
+                          
+                          <div className="flex items-center text-sm text-gray-300">
+                            <Clock className="h-3 w-3 mr-1 text-blue-400" />
+                            Time Taken: {formatTime(result.time_seconds)}
                           </div>
                         </div>
                         <Button 

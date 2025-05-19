@@ -23,6 +23,7 @@ const Results = () => {
       return {
         score: data.score,
         totalQuestions: data.total_questions,
+        timeInSeconds: data.time_seconds || 0,
         incorrectAnswers: [] // This would need to be expanded based on your data structure
       };
     },

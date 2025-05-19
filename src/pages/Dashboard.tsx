@@ -12,6 +12,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
+import PageHeader from "@/components/PageHeader";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -35,6 +36,14 @@ const Dashboard = () => {
       status: company.averageScore < 60 ? "critical" : "needs-improvement"
     }))
     .slice(0, 3);
+    
+  // Format time in minutes and seconds
+  const formatTime = (seconds: number): string => {
+    if (seconds === 0) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   return (
     <ProtectedRoute>
@@ -70,19 +79,11 @@ const Dashboard = () => {
         
         <main className={isMobile ? "pt-16" : "pl-64"}>
           <div className="p-4 md:p-8">
-            <motion.div 
-              className="text-center max-w-3xl mx-auto mb-6 md:mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-                Welcome to your <span className="text-gradient">Dashboard</span>
-              </h1>
-              <p className="text-xl text-gray-300">
-                Select an option from the {isMobile ? "menu" : "sidebar"} to get started.
-              </p>
-            </motion.div>
+            <PageHeader
+              title="Welcome to your Dashboard"
+              highlightedWord="Dashboard"
+              description={`Select an option from the ${isMobile ? "menu" : "sidebar"} to get started.`}
+            />
             
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
               {/* Quick Stats Card */}
@@ -108,6 +109,13 @@ const Dashboard = () => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">Average Score</span>
                         <span className="font-semibold">{analytics?.averageScore ? `${Math.round(analytics.averageScore)}%` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">Average Time</span>
+                        <span className="font-semibold flex items-center">
+                          <Clock className="h-3 w-3 mr-1 text-blue-400" />
+                          {analytics?.averageTimeSeconds ? formatTime(analytics.averageTimeSeconds) : 'N/A'}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">Best Score</span>

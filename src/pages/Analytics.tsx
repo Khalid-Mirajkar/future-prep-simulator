@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { Home, Menu } from "lucide-react";
+import { Home, Menu, Clock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,14 @@ const Analytics = () => {
   // Helper function to safely format numbers
   const formatNumber = (value: any): string => {
     return typeof value === 'number' ? value.toFixed(2) + '%' : 'N/A';
+  };
+  
+  // Format time in minutes and seconds
+  const formatTime = (seconds: number | null): string => {
+    if (seconds === null || seconds === 0) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
   };
 
   // Colors for the bar chart
@@ -123,12 +131,13 @@ const Analytics = () => {
                   <Card className="bg-black/30 border-white/10">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Best Score
+                        Average Time
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">
-                        {formatNumber(analytics.bestScore)}
+                      <div className="text-2xl font-bold flex items-center">
+                        <Clock className="h-4 w-4 mr-2 text-blue-400" />
+                        {formatTime(analytics.averageTimeSeconds)}
                       </div>
                     </CardContent>
                   </Card>
@@ -136,14 +145,12 @@ const Analytics = () => {
                   <Card className="bg-black/30 border-white/10">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Latest Interview
+                        Best Score
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-lg font-bold">
-                        {data[0]?.created_at 
-                          ? new Date(data[0].created_at).toLocaleDateString() 
-                          : 'N/A'}
+                      <div className="text-2xl font-bold">
+                        {formatNumber(analytics.bestScore)}
                       </div>
                     </CardContent>
                   </Card>
@@ -288,8 +295,8 @@ const Analytics = () => {
                           <TableRow>
                             <TableHead>Date</TableHead>
                             <TableHead>Company</TableHead>
-                            <TableHead>Position</TableHead>
                             <TableHead>Score</TableHead>
+                            <TableHead>Time</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -299,9 +306,11 @@ const Analytics = () => {
                                 {new Date(result.created_at).toLocaleDateString()}
                               </TableCell>
                               <TableCell>{result.company_name || 'N/A'}</TableCell>
-                              <TableCell>{result.job_title || 'N/A'}</TableCell>
                               <TableCell>
                                 {formatNumber((result.score / result.total_questions) * 100)}
+                              </TableCell>
+                              <TableCell>
+                                {formatTime(result.time_seconds)}
                               </TableCell>
                             </TableRow>
                           ))}

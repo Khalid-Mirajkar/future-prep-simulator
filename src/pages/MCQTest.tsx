@@ -9,6 +9,7 @@ import MCQTestError from '@/components/MCQTestError';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import PageHeader from '@/components/PageHeader';
 
 // Define TypeScript interface for location state
 interface LocationState {
@@ -33,6 +34,8 @@ const MCQTest: React.FC = () => {
     showResults,
     testResult,
     isIncompatibleJob,
+    initialSeconds,
+    remainingSeconds,
     handleOptionSelect,
     setCurrentQuestion,
     evaluateTest,
@@ -95,7 +98,10 @@ const MCQTest: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20">
       <div className="container mx-auto px-6">
-        <h1 className="text-4xl font-bold mb-8 text-center">MCQ Interview Practice</h1>
+        <PageHeader 
+          title="MCQ Interview Practice"
+          highlightedWord="Interview"
+        />
         
         {showResults && testResult ? (
           <MCQTestResults
@@ -118,6 +124,8 @@ const MCQTest: React.FC = () => {
               handleOptionSelect={handleOptionSelect}
               setCurrentQuestion={setCurrentQuestion}
               evaluateTest={evaluateTest}
+              initialSeconds={initialSeconds}
+              remainingSeconds={remainingSeconds}
             />
           </div>
         )}

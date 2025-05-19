@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { MCQQuestion } from '@/types/mcq';
+import TimerProgressBar from '@/components/TimerProgressBar';
 
 interface MCQQuestionDisplayProps {
   questions: MCQQuestion[];
@@ -10,6 +11,8 @@ interface MCQQuestionDisplayProps {
   handleOptionSelect: (questionId: number, optionIndex: number) => void;
   setCurrentQuestion: React.Dispatch<React.SetStateAction<number>>;
   evaluateTest: () => void;
+  initialSeconds: number;
+  remainingSeconds: number;
 }
 
 const MCQQuestionDisplay: React.FC<MCQQuestionDisplayProps> = ({
@@ -18,10 +21,17 @@ const MCQQuestionDisplay: React.FC<MCQQuestionDisplayProps> = ({
   selectedAnswers,
   handleOptionSelect,
   setCurrentQuestion,
-  evaluateTest
+  evaluateTest,
+  initialSeconds,
+  remainingSeconds
 }) => {
   return (
     <div className="max-w-2xl mx-auto glass-card p-8 rounded-xl">
+      <TimerProgressBar 
+        initialSeconds={initialSeconds} 
+        remainingSeconds={remainingSeconds} 
+      />
+
       <div className="mb-6">
         <p className="text-lg font-medium mb-4">
           Question {currentQuestion + 1} of {questions.length}
