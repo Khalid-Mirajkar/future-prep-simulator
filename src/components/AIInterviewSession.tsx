@@ -221,79 +221,90 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <div className="flex items-center space-x-3">
-          <h1 className="text-lg font-semibold">AI Interview</h1>
-          <span className="text-sm text-gray-400">•</span>
-          <span className="text-sm text-gray-400">{companyName} - {jobTitle}</span>
-        </div>
-        <div className="text-sm text-gray-400">
-          Question {currentQuestionIndex + 1} of {questions.length}
-        </div>
-      </div>
-
-      {/* Main Interview Area - Split Screen */}
-      <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Left Side - AI Interviewer */}
-        <div className="flex-1 flex flex-col p-4 space-y-4">
-          <div className="flex-1 flex items-center justify-center">
-            <CustomAvatar
-              isGenerating={isGenerating}
-              isPlaying={isPlaying}
-            />
-          </div>
+    <div className="min-h-screen bg-[#0D0D0D] text-white relative overflow-hidden">
+      {/* Main Video Grid - Split Screen Layout */}
+      <div className="absolute inset-0 grid grid-cols-1 lg:grid-cols-2 gap-1 p-1 pb-20">
+        {/* AI Interviewer Video */}
+        <div className="relative bg-gray-900 rounded-lg overflow-hidden">
+          <CustomAvatar
+            isGenerating={isGenerating}
+            isPlaying={isPlaying}
+          />
           
-          {/* AI Subtitles */}
+          {/* AI Interviewer Label */}
+          <div className="absolute bottom-3 left-3">
+            <div className="bg-black/60 px-2 py-1 rounded text-white text-xs font-medium">
+              AI Interviewer
+            </div>
+          </div>
+
+          {/* AI Subtitles Overlay */}
           <SubtitleDisplay
             text={currentSubtitle}
             isActive={isPlaying}
             title="AI Interviewer"
+            isOverlay={true}
           />
 
-          {/* Current Question */}
-          <Card className="bg-gray-900 border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-purple-400">{currentQuestion.category}</span>
+          {/* Speaking indicator */}
+          {isPlaying && (
+            <div className="absolute top-3 right-3">
+              <div className="bg-green-500/80 rounded-full px-3 py-1">
+                <span className="text-white text-xs font-medium">Speaking</span>
               </div>
-              <p className="text-white">{currentQuestion.question}</p>
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </div>
 
-        {/* Right Side - User */}
-        <div className="flex-1 flex flex-col p-4 space-y-4">
-          <div className="flex-1">
-            <UserVideoFeed
-              videoRef={videoRef}
-              isVideoEnabled={isVideoEnabled}
-              onInitialize={initializeCamera}
-            />
-          </div>
-          
-          {/* User Subtitles */}
-          <SubtitleDisplay
-            text={transcript}
-            isActive={isListening}
-            title="Your Response"
+        {/* User Video */}
+        <div className="relative">
+          <UserVideoFeed
+            videoRef={videoRef}
+            isVideoEnabled={isVideoEnabled}
+            onInitialize={initializeCamera}
+            subtitle={transcript}
+            isListening={isListening}
           />
-
-          {/* Answer Status */}
-          {isWaitingForAnswer && (
-            <Card className="bg-blue-900/50 border-blue-700">
-              <CardContent className="p-3">
-                <p className="text-blue-300 text-sm text-center">
-                  {isListening ? "Listening... Speak your answer" : "Processing your response..."}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
-      {/* Bottom Controls */}
+      {/* Top Bar with Meeting Info */}
+      <div className="absolute top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-sm border-b border-gray-700 z-10">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-white font-semibold">AI Interview Session</h1>
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-400 text-sm">{companyName} - {jobTitle}</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-400">
+              Question {currentQuestionIndex + 1} of {questions.length}
+            </div>
+            <div className="bg-red-500 text-white px-2 py-1 rounded text-xs">
+              REC
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Current Question Overlay */}
+      {currentQuestion && (
+        <div className="absolute top-20 left-4 right-4 z-10">
+          <Card className="bg-gray-900/90 backdrop-blur-sm border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-purple-400 font-medium">{currentQuestion.category}</span>
+                {isWaitingForAnswer && (
+                  <span className="text-xs text-blue-400 animate-pulse">Listening for your response...</span>
+                )}
+              </div>
+              <p className="text-white text-sm">{currentQuestion.question}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Video Call Controls */}
       <InterviewControls
         isVideoEnabled={isVideoEnabled}
         isAudioEnabled={isAudioEnabled}

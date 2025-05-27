@@ -1,25 +1,28 @@
 
 import React, { useEffect } from 'react';
-import { Card } from '@/components/ui/card';
 import { Camera, CameraOff } from 'lucide-react';
 
 interface UserVideoFeedProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   isVideoEnabled: boolean;
   onInitialize: () => Promise<void>;
+  subtitle?: string;
+  isListening?: boolean;
 }
 
 const UserVideoFeed: React.FC<UserVideoFeedProps> = ({ 
   videoRef, 
   isVideoEnabled, 
-  onInitialize 
+  onInitialize,
+  subtitle,
+  isListening 
 }) => {
   useEffect(() => {
     onInitialize();
   }, [onInitialize]);
 
   return (
-    <Card className="relative overflow-hidden bg-gray-900 border-gray-700 h-full">
+    <div className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden">
       {isVideoEnabled ? (
         <video
           ref={videoRef}
@@ -55,7 +58,27 @@ const UserVideoFeed: React.FC<UserVideoFeedProps> = ({
           You
         </div>
       </div>
-    </Card>
+
+      {/* Subtitle overlay */}
+      {subtitle && (
+        <div className="absolute bottom-10 left-3 right-3 z-10">
+          <div className="bg-black/80 backdrop-blur-sm rounded-lg px-3 py-2">
+            <p className="text-white text-sm leading-relaxed text-center">
+              {subtitle}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Listening indicator */}
+      {isListening && (
+        <div className="absolute top-3 right-3">
+          <div className="bg-red-500/80 rounded-full p-2 animate-pulse">
+            <div className="w-3 h-3 bg-white rounded-full"></div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

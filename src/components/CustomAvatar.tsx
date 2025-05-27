@@ -1,6 +1,5 @@
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Volume2, Loader2 } from 'lucide-react';
 
 interface CustomAvatarProps {
@@ -42,46 +41,130 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     return analyser;
   };
 
-  const drawAvatar = (mouthValue: number) => {
+  const drawRealisticAvatar = (mouthValue: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw head (circle)
-    ctx.fillStyle = '#8B5CF6';
+    // Draw office background gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#f8f9fa');
+    gradient.addColorStop(0.3, '#e9ecef');
+    gradient.addColorStop(0.7, '#dee2e6');
+    gradient.addColorStop(1, '#ced4da');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw office elements (bookshelf, window)
+    // Bookshelf
+    ctx.fillStyle = '#8b4513';
+    ctx.fillRect(canvas.width - 60, 20, 50, 120);
+    
+    // Books
+    ctx.fillStyle = '#dc3545';
+    ctx.fillRect(canvas.width - 55, 25, 8, 30);
+    ctx.fillStyle = '#007bff';
+    ctx.fillRect(canvas.width - 45, 25, 8, 30);
+    ctx.fillStyle = '#28a745';
+    ctx.fillRect(canvas.width - 35, 25, 8, 30);
+    
+    // Professional attire - suit jacket
+    ctx.fillStyle = '#1a1a2e';
     ctx.beginPath();
-    ctx.arc(80, 80, 70, 0, 2 * Math.PI);
+    ctx.moveTo(60, canvas.height);
+    ctx.lineTo(40, 180);
+    ctx.lineTo(120, 180);
+    ctx.lineTo(100, canvas.height);
     ctx.fill();
     
-    // Draw eyes
+    // Shirt
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(70, canvas.height);
+    ctx.lineTo(65, 190);
+    ctx.lineTo(95, 190);
+    ctx.lineTo(90, canvas.height);
+    ctx.fill();
+    
+    // Tie
+    ctx.fillStyle = '#0066cc';
+    ctx.beginPath();
+    ctx.moveTo(80, 190);
+    ctx.lineTo(75, 210);
+    ctx.lineTo(85, 210);
+    ctx.fill();
+    
+    // Head (realistic skin tone)
+    ctx.fillStyle = '#FDBCB4';
+    ctx.beginPath();
+    ctx.ellipse(80, 120, 35, 40, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Hair
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.ellipse(80, 95, 38, 25, 0, 0, Math.PI);
+    ctx.fill();
+    
+    // Eyes
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.arc(60, 65, 8, 0, 2 * Math.PI);
+    ctx.ellipse(70, 110, 8, 6, 0, 0, 2 * Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(100, 65, 8, 0, 2 * Math.PI);
+    ctx.ellipse(90, 110, 8, 6, 0, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Draw pupils
+    // Pupils
     ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.arc(60, 65, 4, 0, 2 * Math.PI);
+    ctx.arc(70, 110, 4, 0, 2 * Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(100, 65, 4, 0, 2 * Math.PI);
+    ctx.arc(90, 110, 4, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Draw mouth based on audio analysis
-    ctx.fillStyle = '#000000';
+    // Eyebrows
+    ctx.strokeStyle = '#654321';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    const mouthY = 100;
-    const mouthHeight = Math.max(2, mouthValue * 20);
-    ctx.ellipse(80, mouthY, 15, mouthHeight, 0, 0, 2 * Math.PI);
+    ctx.moveTo(62, 100);
+    ctx.lineTo(78, 98);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(82, 98);
+    ctx.lineTo(98, 100);
+    ctx.stroke();
+    
+    // Nose
+    ctx.fillStyle = '#F4A490';
+    ctx.beginPath();
+    ctx.ellipse(80, 120, 4, 8, 0, 0, 2 * Math.PI);
     ctx.fill();
+    
+    // Mouth with realistic lip sync
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    const mouthY = 135;
+    const mouthHeight = Math.max(1, mouthValue * 12);
+    const mouthWidth = 18 - (mouthValue * 4); // Width decreases as mouth opens
+    ctx.ellipse(80, mouthY, mouthWidth, mouthHeight, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Subtle smile lines
+    if (mouthValue < 0.3) {
+      ctx.strokeStyle = '#D2B48C';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(80, 135, 20, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
   };
 
   const analyzeAudio = () => {
@@ -92,10 +175,10 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     
     // Calculate average frequency for mouth movement
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-    const normalized = Math.min(average / 128, 1);
+    const normalized = Math.min(average / 100, 1);
     
     setMouthOpenness(normalized);
-    drawAvatar(normalized);
+    drawRealisticAvatar(normalized);
     
     if (isPlaying) {
       animationFrameRef.current = requestAnimationFrame(analyzeAudio);
@@ -103,7 +186,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
   };
 
   useEffect(() => {
-    drawAvatar(mouthOpenness);
+    drawRealisticAvatar(mouthOpenness);
   }, [mouthOpenness]);
 
   useEffect(() => {
@@ -114,7 +197,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
       setMouthOpenness(0);
-      drawAvatar(0);
+      drawRealisticAvatar(0);
     }
 
     return () => {
@@ -126,32 +209,26 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
 
   if (isGenerating) {
     return (
-      <div className="relative">
-        <Avatar className="w-40 h-40 border-4 border-blue-500 animate-pulse">
-          <AvatarImage src={fallbackImageUrl} alt="AI Recruiter" />
-          <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-3xl font-bold">
-            AI
-          </AvatarFallback>
-        </Avatar>
-        <div className="absolute -bottom-2 -right-2 bg-blue-500 rounded-full p-2">
-          <Loader2 className="h-4 w-4 text-white animate-spin" />
+      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-300">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-gray-600 animate-spin mx-auto mb-2" />
+          <p className="text-gray-600 text-sm">Connecting...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full">
       <canvas
         ref={canvasRef}
-        width={160}
-        height={160}
-        className="rounded-full border-4 border-green-500"
-        style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+        width={320}
+        height={240}
+        className="w-full h-full object-cover"
       />
       {isPlaying && (
-        <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2">
-          <Volume2 className="h-4 w-4 text-white" />
+        <div className="absolute top-3 right-3 bg-green-500/80 rounded-full p-2">
+          <Volume2 className="h-3 w-3 text-white" />
         </div>
       )}
     </div>
