@@ -45,8 +45,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const { toast } = useToast();
 
   // Get D-ID API key from environment or fallback
-  const didApiKey = import.meta.env.VITE_DID_API_KEY || null;
-  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar(didApiKey);
+  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
 
   // Sample interview questions (we'll generate these dynamically later)
   const questions: InterviewQuestion[] = [
