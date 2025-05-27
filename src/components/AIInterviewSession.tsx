@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useDIDAvatar } from '@/hooks/useDIDAvatar';
+import DIDAvatar from '@/components/DIDAvatar';
 
 interface InterviewQuestion {
   id: number;
@@ -34,7 +34,6 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 }) => {
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [isAvatarSpeaking, setIsAvatarSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [responses, setResponses] = useState<InterviewResponse[]>([]);
@@ -44,6 +43,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
+
+  // Get D-ID API key from environment or fallback
+  const didApiKey = import.meta.env.VITE_DID_API_KEY || null;
+  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar(didApiKey);
 
   // Sample interview questions (we'll generate these dynamically later)
   const questions: InterviewQuestion[] = [
@@ -125,30 +128,13 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     
-    // Avatar greeting
+    // Avatar greeting using D-ID
     await speakText(`Hi there! Welcome to your mock interview for the ${jobTitle} position at ${companyName}. I'm excited to get to know you better. Let's begin with our first question.`);
     
-    // Start first question
-    askCurrentQuestion();
-  };
-
-  const speakText = async (text: string): Promise<void> => {
-    return new Promise((resolve) => {
-      setIsAvatarSpeaking(true);
-      
-      // Use Web Speech API for text-to-speech
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      
-      utterance.onend = () => {
-        setIsAvatarSpeaking(false);
-        resolve();
-      };
-      
-      speechSynthesis.speak(utterance);
-    });
+    // Start first question after greeting
+    setTimeout(() => {
+      askCurrentQuestion();
+    }, 2000);
   };
 
   const askCurrentQuestion = async () => {
@@ -160,7 +146,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       // Start listening after avatar finishes speaking
       setTimeout(() => {
         startListening();
-      }, 1000);
+      }, 2000);
     }
   };
 
@@ -237,18 +223,17 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     const totalTime = Math.round((Date.now() - interviewStartTime) / 1000);
     setTimeout(() => {
       onInterviewComplete(responses, totalTime);
-    }, 3000);
+    }, 5000);
   };
 
   if (!interviewStarted) {
     return (
       <div className="flex flex-col items-center space-y-6">
-        <Avatar className="w-32 h-32 border-4 border-purple-500/50">
-          <AvatarImage src="/placeholder.svg" alt="AI Recruiter" />
-          <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-2xl font-bold">
-            AI
-          </AvatarFallback>
-        </Avatar>
+        <DIDAvatar
+          videoUrl={currentVideoUrl}
+          isGenerating={isGenerating}
+          isPlaying={isPlaying}
+        />
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-2">Meet Your AI Recruiter</h2>
           <p className="text-gray-400">Ready to conduct your interview simulation</p>
@@ -271,20 +256,15 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
   return (
     <div className="flex flex-col items-center space-y-6">
-      {/* AI Recruiter Avatar */}
-      <div className="relative">
-        <Avatar className={`w-40 h-40 border-4 transition-all duration-300 ${isAvatarSpeaking ? 'border-green-500 animate-pulse' : 'border-purple-500/50'}`}>
-          <AvatarImage src="/placeholder.svg" alt="AI Recruiter" />
-          <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-3xl font-bold">
-            AI
-          </AvatarFallback>
-        </Avatar>
-        {isAvatarSpeaking && (
-          <div className="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-2">
-            <Volume2 className="h-4 w-4 text-white" />
-          </div>
-        )}
-      </div>
+      {/* AI Recruiter Avatar with D-ID Integration */}
+      <DIDAvatar
+        videoUrl={currentVideoUrl}
+        isGenerating={isGenerating}
+        isPlaying={isPlaying}
+        onVideoEnd={() => {
+          // Avatar finished speaking, ready for user input
+        }}
+      />
 
       {/* Question Display */}
       <Card className="max-w-2xl w-full bg-gray-900 border-gray-700">
@@ -316,7 +296,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
       {/* Controls */}
       <div className="flex items-center gap-4">
-        {!isAvatarSpeaking && (
+        {!isGenerating && !isPlaying && (
           <>
             <Button
               onClick={isListening ? stopListening : startListening}
