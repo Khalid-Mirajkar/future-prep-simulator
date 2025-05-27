@@ -22,7 +22,11 @@ serve(async (req) => {
 
     const didApiUrl = 'https://api.d-id.com';
 
+    console.log(`Processing ${action} request...`);
+
     if (action === 'create') {
+      console.log('Creating new talk with text:', text);
+      
       // Create a new talk
       const response = await fetch(`${didApiUrl}/talks`, {
         method: 'POST',
@@ -49,16 +53,24 @@ serve(async (req) => {
         }),
       });
 
+      const responseText = await response.text();
+      console.log('D-ID create response status:', response.status);
+      console.log('D-ID create response:', responseText);
+
       if (!response.ok) {
-        throw new Error(`D-ID API error: ${response.statusText}`);
+        throw new Error(`D-ID API error: ${response.status} - ${responseText}`);
       }
 
-      const result = await response.json();
+      const result = JSON.parse(responseText);
+      console.log('Talk created successfully with ID:', result.id);
+      
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (action === 'status') {
+      console.log('Checking status for talk ID:', talkId);
+      
       // Get talk status
       const response = await fetch(`${didApiUrl}/talks/${talkId}`, {
         headers: {
@@ -66,11 +78,17 @@ serve(async (req) => {
         },
       });
 
+      const responseText = await response.text();
+      console.log('D-ID status response status:', response.status);
+      console.log('D-ID status response:', responseText);
+
       if (!response.ok) {
-        throw new Error(`D-ID API error: ${response.statusText}`);
+        throw new Error(`D-ID API error: ${response.status} - ${responseText}`);
       }
 
-      const result = await response.json();
+      const result = JSON.parse(responseText);
+      console.log('Talk status:', result.status);
+      
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
