@@ -42,10 +42,20 @@ export const useDIDAvatar = (): UseDIDAvatarReturn => {
       
       console.log('D-ID video generated successfully:', videoUrl);
       setCurrentVideoUrl(videoUrl);
+      setIsGenerating(false);
       setIsPlaying(true);
+      
+      // Auto-stop playing after estimated duration plus buffer
+      const estimatedDuration = Math.max(5000, text.length * 100); // Rough estimate
+      setTimeout(() => {
+        console.log('Auto-stopping D-ID video playback');
+        setIsPlaying(false);
+      }, estimatedDuration);
       
     } catch (error) {
       console.error('D-ID avatar error:', error);
+      setIsGenerating(false);
+      setIsPlaying(false);
       
       // Show specific error message
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -64,6 +74,11 @@ export const useDIDAvatar = (): UseDIDAvatarReturn => {
         utterance.pitch = 1;
         utterance.volume = 0.8;
         
+        utterance.onstart = () => {
+          console.log('Text-to-speech started');
+          setIsPlaying(true);
+        };
+        
         utterance.onend = () => {
           console.log('Text-to-speech finished');
           setIsPlaying(false);
@@ -75,14 +90,10 @@ export const useDIDAvatar = (): UseDIDAvatarReturn => {
         };
         
         speechSynthesis.speak(utterance);
-        setIsPlaying(true);
       } catch (speechError) {
         console.error('Text-to-speech fallback failed:', speechError);
         setIsPlaying(false);
       }
-      
-    } finally {
-      setIsGenerating(false);
     }
   }, [toast]);
 

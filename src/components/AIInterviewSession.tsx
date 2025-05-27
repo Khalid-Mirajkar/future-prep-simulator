@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -101,10 +100,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setCurrentSubtitle(greetingText);
     await speakText(greetingText);
     
-    // Start first question after greeting
+    // Start first question after greeting finishes
     setTimeout(() => {
       askCurrentQuestion();
-    }, 2000);
+    }, 3000); // Increased delay to ensure greeting finishes
   };
 
   const askCurrentQuestion = async () => {
@@ -113,15 +112,17 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       setQuestionStartTime(Date.now());
       setIsWaitingForAnswer(false);
       
+      console.log('Asking question:', question.question);
       setCurrentSubtitle(question.question);
       await speakText(question.question);
       
       // Start listening after avatar finishes speaking
       setTimeout(() => {
+        console.log('Starting to listen for answer...');
         setIsWaitingForAnswer(true);
-        startListening();
         setCurrentSubtitle('');
-      }, 2000);
+        startListening();
+      }, 3000); // Increased delay to ensure question finishes
     }
   };
 
@@ -189,19 +190,38 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const handleVideoEnd = () => {
+    console.log('D-ID video ended, clearing subtitle');
     setCurrentSubtitle('');
   };
 
   // Auto-submit answer when user stops talking for 3 seconds
   useEffect(() => {
     if (isWaitingForAnswer && transcript && !isListening) {
+      console.log('User stopped talking, starting timer to submit answer...');
       const timer = setTimeout(() => {
+        console.log('Auto-submitting answer:', transcript);
         submitAnswer();
       }, 3000);
       
       return () => clearTimeout(timer);
     }
   }, [isWaitingForAnswer, transcript, isListening]);
+
+  // Handle microphone permission
+  useEffect(() => {
+    const requestMicrophonePermission = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('Microphone permission granted');
+      } catch (error) {
+        console.error('Microphone permission denied:', error);
+      }
+    };
+
+    if (interviewStarted) {
+      requestMicrophonePermission();
+    }
+  }, [interviewStarted]);
 
   if (!interviewStarted) {
     return (
@@ -262,15 +282,6 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
             title="AI Interviewer"
             isOverlay={true}
           />
-
-          {/* Speaking indicator */}
-          {isPlaying && (
-            <div className="absolute top-3 right-3">
-              <div className="bg-green-500/80 rounded-full px-3 py-1">
-                <span className="text-white text-xs font-medium">Speaking</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* User Video */}
