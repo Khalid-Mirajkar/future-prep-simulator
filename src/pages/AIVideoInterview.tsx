@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Video, Mic, MicOff, VideoOff, Phone, Settings } from 'lucide-react';
+import { Settings, Phone } from 'lucide-react';
+import AIInterviewSession from '@/components/AIInterviewSession';
+import AIInterviewResults from '@/components/AIInterviewResults';
 
 interface LocationState {
   companyName: string;
@@ -11,9 +12,23 @@ interface LocationState {
   companyLogo?: string;
 }
 
+interface InterviewResponse {
+  questionId: number;
+  question: string;
+  answer: string;
+  score: number;
+  evaluation: string;
+  timeSpent: number;
+}
+
 const AIVideoInterview = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [interviewCompleted, setInterviewCompleted] = useState(false);
+  const [interviewResults, setInterviewResults] = useState<{
+    responses: InterviewResponse[];
+    totalTime: number;
+  } | null>(null);
   
   const locationState = location.state as LocationState | undefined;
 
@@ -22,11 +37,23 @@ const AIVideoInterview = () => {
     return null;
   }
 
-  const handleStartInterview = () => {
-    // For now, just show a transition effect
-    console.log('Starting AI interview simulation...');
-    // TODO: Implement actual interview flow
+  const handleInterviewComplete = (responses: InterviewResponse[], totalTime: number) => {
+    setInterviewResults({ responses, totalTime });
+    setInterviewCompleted(true);
   };
+
+  if (interviewCompleted && interviewResults) {
+    return (
+      <div className="min-h-screen bg-[#0D0D0D] text-white p-6">
+        <AIInterviewResults
+          responses={interviewResults.responses}
+          totalTime={interviewResults.totalTime}
+          companyName={locationState.companyName}
+          jobTitle={locationState.jobTitle}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col">
@@ -44,59 +71,20 @@ const AIVideoInterview = () => {
         </div>
       </div>
 
-      {/* Main video area */}
+      {/* Main interview area */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-4xl w-full">
-          {/* AI Recruiter Video Section */}
-          <div className="relative mb-8">
-            <div className="aspect-video bg-gray-900 rounded-lg border border-gray-700 flex items-center justify-center relative overflow-hidden">
-              {/* AI Recruiter Avatar */}
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="w-32 h-32 border-4 border-purple-500/50">
-                  <AvatarImage src="/placeholder.svg" alt="AI Recruiter" />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-600 to-pink-600 text-2xl font-bold">
-                    AI
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <h2 className="text-2xl font-semibold mb-2">Meet Your AI Recruiter</h2>
-                  <p className="text-gray-400">Ready to conduct your interview simulation</p>
-                </div>
-              </div>
-              
-              {/* Name overlay */}
-              <div className="absolute bottom-4 left-4 bg-black/70 rounded-lg px-3 py-1">
-                <span className="text-sm font-medium">AI Recruiter</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Start Interview Section */}
-          <div className="text-center space-y-6">
-            <Button 
-              onClick={handleStartInterview}
-              size="lg"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              Start Interview
-            </Button>
-            
-            <p className="text-gray-400 text-sm max-w-md mx-auto">
-              Click to begin your AI-powered video interview simulation.
-            </p>
-          </div>
+          <AIInterviewSession
+            companyName={locationState.companyName}
+            jobTitle={locationState.jobTitle}
+            onInterviewComplete={handleInterviewComplete}
+          />
         </div>
       </div>
 
       {/* Bottom controls (Google Meet style) */}
       <div className="p-6 border-t border-gray-800">
-        <div className="flex items-center justify-center space-x-4">
-          <Button variant="ghost" size="icon" className="bg-gray-800 hover:bg-gray-700 rounded-full w-12 h-12">
-            <Mic className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="bg-gray-800 hover:bg-gray-700 rounded-full w-12 h-12">
-            <Video className="h-5 w-5" />
-          </Button>
+        <div className="flex items-center justify-center">
           <Button 
             variant="ghost" 
             size="icon" 
