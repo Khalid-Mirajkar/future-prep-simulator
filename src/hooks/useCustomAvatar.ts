@@ -5,12 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 interface UseCustomAvatarReturn {
   isGenerating: boolean;
   isPlaying: boolean;
+  currentSubtitle: string;
   speakText: (text: string) => Promise<void>;
 }
 
 export const useCustomAvatar = (): UseCustomAvatarReturn => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentSubtitle, setCurrentSubtitle] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
@@ -20,6 +22,7 @@ export const useCustomAvatar = (): UseCustomAvatarReturn => {
     try {
       setIsGenerating(true);
       setIsPlaying(false);
+      setCurrentSubtitle(text);
       
       // Wait for voices to be loaded
       await new Promise<void>((resolve) => {
@@ -37,8 +40,8 @@ export const useCustomAvatar = (): UseCustomAvatarReturn => {
       // Create speech synthesis utterance
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Optimal settings for professional, Siri-like voice
-      utterance.rate = 1.1; // Slightly faster than normal for professional pace
+      // Slower, more understandable settings
+      utterance.rate = 0.85; // Slower for better comprehension
       utterance.pitch = 1.0; // Natural pitch
       utterance.volume = 0.9; // Clear volume
       
@@ -97,12 +100,14 @@ export const useCustomAvatar = (): UseCustomAvatarReturn => {
       utterance.onend = () => {
         console.log('Speech finished');
         setIsPlaying(false);
+        setCurrentSubtitle('');
       };
       
       utterance.onerror = (event) => {
         console.error('Speech synthesis error:', event);
         setIsGenerating(false);
         setIsPlaying(false);
+        setCurrentSubtitle('');
         
         toast({
           variant: "destructive",
@@ -123,6 +128,7 @@ export const useCustomAvatar = (): UseCustomAvatarReturn => {
       console.error('Custom avatar error:', error);
       setIsGenerating(false);
       setIsPlaying(false);
+      setCurrentSubtitle('');
       
       toast({
         variant: "destructive",
@@ -135,6 +141,7 @@ export const useCustomAvatar = (): UseCustomAvatarReturn => {
   return {
     isGenerating,
     isPlaying,
+    currentSubtitle,
     speakText
   };
 };
