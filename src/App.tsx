@@ -19,6 +19,7 @@ import ParticlesBackground from "./components/ParticlesBackground";
 import ProfilePage from "./pages/ProfilePage";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
+import AIVideoInterview from "./pages/AIVideoInterview";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const AnimatedRoutes = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/start-practice" element={<StartPractice />} />
         <Route path="/mcq-test" element={<MCQTest />} />
+        <Route path="/ai-video-interview" element={<AIVideoInterview />} />
         <Route path="/results" element={<Results />} />
         <Route path="/results/:id" element={<Results />} />
         <Route path="/coming-soon" element={<ComingSoon />} />

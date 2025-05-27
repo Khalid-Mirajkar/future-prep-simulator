@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -48,8 +47,6 @@ const StartPractice = () => {
   }, []);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // Remove the coming soon toast and enable actual functionality
-    
     const isValid = await validateCompany(values.companyName)
     
     if (!isValid) {
@@ -63,6 +60,14 @@ const StartPractice = () => {
 
     if (values.testType === "mcq") {
       navigate("/mcq-test", { 
+        state: { 
+          companyName: companyData?.name || values.companyName, 
+          jobTitle: values.jobTitle,
+          companyLogo: companyData?.logo,
+        } 
+      })
+    } else if (values.testType === "video") {
+      navigate("/ai-video-interview", { 
         state: { 
           companyName: companyData?.name || values.companyName, 
           jobTitle: values.jobTitle,
@@ -98,8 +103,6 @@ const StartPractice = () => {
         <p className="text-center text-gray-400 mb-8">Fill in the details below to customize your interview experience</p>
         
         <div className="max-w-xl mx-auto glass-card p-8 rounded-xl">
-          {/* Remove coming soon notice */}
-          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
@@ -198,10 +201,10 @@ const StartPractice = () => {
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                            <RadioGroupItem value="video" disabled />
+                            <RadioGroupItem value="video" />
                           </FormControl>
-                          <FormLabel className="font-normal text-gray-500">
-                            Humanize AI Recruiter Video Call Test (Coming Soon)
+                          <FormLabel className="font-normal">
+                            Humanize AI Recruiter Video Call Test
                           </FormLabel>
                         </FormItem>
                       </RadioGroup>
