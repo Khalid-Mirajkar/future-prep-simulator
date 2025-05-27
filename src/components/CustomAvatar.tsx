@@ -20,6 +20,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [mouthOpenness, setMouthOpenness] = useState(0);
+  const [blinkState, setBlinkState] = useState(0);
 
   const setupAudioAnalysis = (audioElement: HTMLAudioElement) => {
     if (!audioContextRef.current) {
@@ -30,8 +31,8 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     const source = audioContext.createMediaElementSource(audioElement);
     const analyser = audioContext.createAnalyser();
     
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.3;
     
     source.connect(analyser);
     analyser.connect(audioContext.destination);
@@ -41,7 +42,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     return analyser;
   };
 
-  const drawRealisticAvatar = (mouthValue: number) => {
+  const drawRealisticHuman = (mouthValue: number, blinkValue: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -51,120 +52,230 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw office background gradient
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#f8f9fa');
-    gradient.addColorStop(0.3, '#e9ecef');
-    gradient.addColorStop(0.7, '#dee2e6');
-    gradient.addColorStop(1, '#ced4da');
+    // Professional office background
+    const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    bgGradient.addColorStop(0, '#f5f5f5');
+    bgGradient.addColorStop(0.4, '#e8e8e8');
+    bgGradient.addColorStop(1, '#d0d0d0');
     
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw office elements (bookshelf, window)
-    // Bookshelf
-    ctx.fillStyle = '#8b4513';
-    ctx.fillRect(canvas.width - 60, 20, 50, 120);
+    // Office elements - modern office background
+    // Window with light
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(canvas.width - 80, 10, 70, 100);
     
-    // Books
-    ctx.fillStyle = '#dc3545';
-    ctx.fillRect(canvas.width - 55, 25, 8, 30);
-    ctx.fillStyle = '#007bff';
-    ctx.fillRect(canvas.width - 45, 25, 8, 30);
-    ctx.fillStyle = '#28a745';
-    ctx.fillRect(canvas.width - 35, 25, 8, 30);
+    // Window frames
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(canvas.width - 80, 10, 35, 100);
+    ctx.strokeRect(canvas.width - 45, 10, 35, 100);
     
-    // Professional attire - suit jacket
-    ctx.fillStyle = '#1a1a2e';
+    // Blurred office furniture
+    ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+    ctx.fillRect(10, 140, 60, 40);
+    ctx.fillRect(canvas.width - 70, 130, 50, 50);
+    
+    // Professional blazer - more realistic colors
+    const blazerGradient = ctx.createLinearGradient(80, 180, 80, canvas.height);
+    blazerGradient.addColorStop(0, '#2c3e50');
+    blazerGradient.addColorStop(1, '#34495e');
+    
+    ctx.fillStyle = blazerGradient;
     ctx.beginPath();
-    ctx.moveTo(60, canvas.height);
-    ctx.lineTo(40, 180);
-    ctx.lineTo(120, 180);
-    ctx.lineTo(100, canvas.height);
+    ctx.moveTo(50, canvas.height);
+    ctx.lineTo(45, 185);
+    ctx.lineTo(65, 175);
+    ctx.lineTo(95, 175);
+    ctx.lineTo(115, 185);
+    ctx.lineTo(110, canvas.height);
+    ctx.closePath();
     ctx.fill();
     
-    // Shirt
+    // Professional shirt
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.moveTo(70, canvas.height);
-    ctx.lineTo(65, 190);
-    ctx.lineTo(95, 190);
+    ctx.lineTo(68, 190);
+    ctx.lineTo(92, 190);
     ctx.lineTo(90, canvas.height);
+    ctx.closePath();
     ctx.fill();
     
-    // Tie
-    ctx.fillStyle = '#0066cc';
+    // Collar
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(80, 190);
-    ctx.lineTo(75, 210);
-    ctx.lineTo(85, 210);
-    ctx.fill();
-    
-    // Head (realistic skin tone)
-    ctx.fillStyle = '#FDBCB4';
-    ctx.beginPath();
-    ctx.ellipse(80, 120, 35, 40, 0, 0, 2 * Math.PI);
-    ctx.fill();
-    
-    // Hair
-    ctx.fillStyle = '#8B4513';
-    ctx.beginPath();
-    ctx.ellipse(80, 95, 38, 25, 0, 0, Math.PI);
-    ctx.fill();
-    
-    // Eyes
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath();
-    ctx.ellipse(70, 110, 8, 6, 0, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(90, 110, 8, 6, 0, 0, 2 * Math.PI);
-    ctx.fill();
-    
-    // Pupils
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.arc(70, 110, 4, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(90, 110, 4, 0, 2 * Math.PI);
-    ctx.fill();
-    
-    // Eyebrows
-    ctx.strokeStyle = '#654321';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(62, 100);
-    ctx.lineTo(78, 98);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(82, 98);
-    ctx.lineTo(98, 100);
+    ctx.moveTo(68, 190);
+    ctx.lineTo(75, 185);
+    ctx.lineTo(80, 190);
+    ctx.lineTo(85, 185);
+    ctx.lineTo(92, 190);
     ctx.stroke();
     
-    // Nose
-    ctx.fillStyle = '#F4A490';
+    // Neck - more realistic skin tone
+    ctx.fillStyle = '#f4c2a1';
     ctx.beginPath();
-    ctx.ellipse(80, 120, 4, 8, 0, 0, 2 * Math.PI);
+    ctx.ellipse(80, 165, 12, 18, 0, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Mouth with realistic lip sync
-    ctx.fillStyle = '#8B4513';
+    // Head - realistic proportions
+    const headGradient = ctx.createRadialGradient(75, 115, 5, 80, 120, 40);
+    headGradient.addColorStop(0, '#f8d0b8');
+    headGradient.addColorStop(1, '#f4c2a1');
+    
+    ctx.fillStyle = headGradient;
     ctx.beginPath();
-    const mouthY = 135;
-    const mouthHeight = Math.max(1, mouthValue * 12);
-    const mouthWidth = 18 - (mouthValue * 4); // Width decreases as mouth opens
-    ctx.ellipse(80, mouthY, mouthWidth, mouthHeight, 0, 0, 2 * Math.PI);
+    ctx.ellipse(80, 125, 32, 38, 0, 0, 2 * Math.PI);
     ctx.fill();
     
-    // Subtle smile lines
-    if (mouthValue < 0.3) {
-      ctx.strokeStyle = '#D2B48C';
-      ctx.lineWidth = 1;
+    // Professional hairstyle - blonde/light brown
+    ctx.fillStyle = '#c8a882';
+    ctx.beginPath();
+    ctx.ellipse(80, 95, 35, 28, 0, 0, Math.PI);
+    ctx.fill();
+    
+    // Hair highlights
+    ctx.fillStyle = '#d4b896';
+    ctx.beginPath();
+    ctx.ellipse(70, 90, 8, 15, -0.3, 0, Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(90, 90, 8, 15, 0.3, 0, Math.PI);
+    ctx.fill();
+    
+    // Eyebrows - well-groomed
+    ctx.fillStyle = '#8b6f47';
+    ctx.beginPath();
+    ctx.ellipse(68, 108, 10, 3, -0.1, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(92, 108, 10, 3, 0.1, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Eyes - more realistic with blinking
+    const eyeHeight = blinkValue > 0.8 ? 2 : 8;
+    
+    // Eye whites
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(68, 118, 9, eyeHeight, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(92, 118, 9, eyeHeight, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    if (eyeHeight > 2) {
+      // Irises - blue eyes
+      ctx.fillStyle = '#4a90c2';
       ctx.beginPath();
-      ctx.arc(80, 135, 20, 0.2, Math.PI - 0.2);
+      ctx.arc(68, 118, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(92, 118, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Pupils
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(68, 118, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(92, 118, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Eye highlights
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(69, 116, 1, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(93, 116, 1, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    
+    // Eyelashes
+    ctx.strokeStyle = '#2c1810';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(60 + i * 4, 114);
+      ctx.lineTo(60 + i * 4, 112);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(84 + i * 4, 114);
+      ctx.lineTo(84 + i * 4, 112);
       ctx.stroke();
     }
+    
+    // Nose - more refined
+    ctx.fillStyle = '#f0b896';
+    ctx.beginPath();
+    ctx.ellipse(80, 128, 3, 6, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Nostrils
+    ctx.fillStyle = '#e8a882';
+    ctx.beginPath();
+    ctx.arc(78, 131, 1, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(82, 131, 1, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Mouth with realistic lip-sync
+    const mouthY = 142;
+    const mouthWidth = 16;
+    const mouthHeight = Math.max(2, mouthValue * 10);
+    
+    // Lips
+    ctx.fillStyle = '#d4838f';
+    ctx.beginPath();
+    if (mouthValue > 0.1) {
+      // Open mouth
+      ctx.ellipse(80, mouthY, mouthWidth, mouthHeight, 0, 0, 2 * Math.PI);
+    } else {
+      // Closed mouth - natural smile
+      ctx.arc(80, mouthY, mouthWidth, 0.1, Math.PI - 0.1);
+    }
+    ctx.fill();
+    
+    // Lip line when mouth is closed
+    if (mouthValue < 0.1) {
+      ctx.strokeStyle = '#c47682';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(80, mouthY, mouthWidth, 0.1, Math.PI - 0.1);
+      ctx.stroke();
+    }
+    
+    // Teeth when mouth is open
+    if (mouthValue > 0.3) {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(80, mouthY - 2, mouthWidth - 4, mouthHeight - 4, 0, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    
+    // Cheek contours for dimension
+    ctx.fillStyle = 'rgba(240, 184, 150, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(60, 130, 8, 12, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(100, 130, 8, 12, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Subtle makeup/professional appearance
+    ctx.fillStyle = 'rgba(200, 150, 140, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(68, 124, 12, 6, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(92, 124, 12, 6, 0, 0, 2 * Math.PI);
+    ctx.fill();
   };
 
   const analyzeAudio = () => {
@@ -175,19 +286,28 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
     
     // Calculate average frequency for mouth movement
     const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
-    const normalized = Math.min(average / 100, 1);
+    const normalized = Math.min(average / 80, 1); // More sensitive
     
     setMouthOpenness(normalized);
-    drawRealisticAvatar(normalized);
     
     if (isPlaying) {
       animationFrameRef.current = requestAnimationFrame(analyzeAudio);
     }
   };
 
+  // Blinking animation
   useEffect(() => {
-    drawRealisticAvatar(mouthOpenness);
-  }, [mouthOpenness]);
+    const blinkInterval = setInterval(() => {
+      setBlinkState(1);
+      setTimeout(() => setBlinkState(0), 150);
+    }, 3000 + Math.random() * 2000);
+
+    return () => clearInterval(blinkInterval);
+  }, []);
+
+  useEffect(() => {
+    drawRealisticHuman(mouthOpenness, blinkState);
+  }, [mouthOpenness, blinkState]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -197,7 +317,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
       setMouthOpenness(0);
-      drawRealisticAvatar(0);
+      drawRealisticHuman(0, blinkState);
     }
 
     return () => {
@@ -205,7 +325,7 @@ const CustomAvatar: React.FC<CustomAvatarProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, blinkState]);
 
   if (isGenerating) {
     return (
