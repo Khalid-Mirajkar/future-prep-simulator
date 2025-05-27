@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { useDIDAvatar } from '@/hooks/useDIDAvatar';
-import DIDAvatar from '@/components/DIDAvatar';
+import { useCustomAvatar } from '@/hooks/useCustomAvatar';
+import CustomAvatar from '@/components/CustomAvatar';
 
 interface InterviewQuestion {
   id: number;
@@ -44,8 +44,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
-  // Get D-ID API key from environment or fallback
-  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
+  // Use custom avatar instead of D-ID
+  const { isGenerating, isPlaying, speakText } = useCustomAvatar();
 
   // Sample interview questions (we'll generate these dynamically later)
   const questions: InterviewQuestion[] = [
@@ -127,7 +127,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     
-    // Avatar greeting using D-ID
+    // Avatar greeting using custom avatar
     await speakText(`Hi there! Welcome to your mock interview for the ${jobTitle} position at ${companyName}. I'm excited to get to know you better. Let's begin with our first question.`);
     
     // Start first question after greeting
@@ -228,8 +228,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   if (!interviewStarted) {
     return (
       <div className="flex flex-col items-center space-y-6">
-        <DIDAvatar
-          videoUrl={currentVideoUrl}
+        <CustomAvatar
           isGenerating={isGenerating}
           isPlaying={isPlaying}
         />
@@ -255,12 +254,11 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
   return (
     <div className="flex flex-col items-center space-y-6">
-      {/* AI Recruiter Avatar with D-ID Integration */}
-      <DIDAvatar
-        videoUrl={currentVideoUrl}
+      {/* AI Recruiter Avatar with Custom Implementation */}
+      <CustomAvatar
         isGenerating={isGenerating}
         isPlaying={isPlaying}
-        onVideoEnd={() => {
+        onSpeechEnd={() => {
           // Avatar finished speaking, ready for user input
         }}
       />
