@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useCustomAvatar } from '@/hooks/useCustomAvatar';
+import { useDIDAvatar } from '@/hooks/useDIDAvatar';
 import { useUserCamera } from '@/hooks/useUserCamera';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import CustomAvatar from '@/components/CustomAvatar';
+import DIDAvatar from '@/components/DIDAvatar';
 import UserVideoFeed from '@/components/UserVideoFeed';
 import SubtitleDisplay from '@/components/SubtitleDisplay';
 import InterviewControls from '@/components/InterviewControls';
@@ -42,9 +42,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [interviewStartTime, setInterviewStartTime] = useState<number>(0);
   const [questionStartTime, setQuestionStartTime] = useState<number>(0);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
+  const [currentSubtitle, setCurrentSubtitle] = useState('');
 
-  // Custom hooks
-  const { isGenerating, isPlaying, currentSubtitle, speakText } = useCustomAvatar();
+  // Updated to use D-ID avatar instead of custom avatar
+  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
   const { 
     videoRef, 
     isVideoEnabled, 
@@ -95,8 +96,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     
-    // Avatar greeting
-    await speakText(`Hi there! Welcome to your mock interview for the ${jobTitle} position at ${companyName}. I'm excited to get to know you better. Let's begin with our first question.`);
+    // Avatar greeting with D-ID
+    const greetingText = `Hi there! Welcome to your mock interview for the ${jobTitle} position at ${companyName}. I'm excited to get to know you better. Let's begin with our first question.`;
+    setCurrentSubtitle(greetingText);
+    await speakText(greetingText);
     
     // Start first question after greeting
     setTimeout(() => {
@@ -110,12 +113,14 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       setQuestionStartTime(Date.now());
       setIsWaitingForAnswer(false);
       
+      setCurrentSubtitle(question.question);
       await speakText(question.question);
       
       // Start listening after avatar finishes speaking
       setTimeout(() => {
         setIsWaitingForAnswer(true);
         startListening();
+        setCurrentSubtitle('');
       }, 2000);
     }
   };
@@ -165,7 +170,9 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const endInterview = async () => {
-    await speakText("Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!");
+    const endingText = "Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!";
+    setCurrentSubtitle(endingText);
+    await speakText(endingText);
     
     const totalTime = Math.round((Date.now() - interviewStartTime) / 1000);
     setTimeout(() => {
@@ -179,6 +186,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     stopListening();
     // Navigate back or end interview
     window.history.back();
+  };
+
+  const handleVideoEnd = () => {
+    setCurrentSubtitle('');
   };
 
   // Auto-submit answer when user stops talking for 3 seconds
@@ -197,9 +208,12 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col">
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center space-y-6 max-w-md">
-            <CustomAvatar
+            <DIDAvatar
+              videoUrl={currentVideoUrl}
               isGenerating={isGenerating}
               isPlaying={isPlaying}
+              onVideoEnd={handleVideoEnd}
+              fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
             />
             <div>
               <h2 className="text-2xl font-semibold mb-2">Meet Your AI Interviewer</h2>
@@ -226,9 +240,12 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       <div className="absolute inset-0 grid grid-cols-1 lg:grid-cols-2 gap-1 p-1 pb-20">
         {/* AI Interviewer Video */}
         <div className="relative bg-gray-900 rounded-lg overflow-hidden">
-          <CustomAvatar
+          <DIDAvatar
+            videoUrl={currentVideoUrl}
             isGenerating={isGenerating}
             isPlaying={isPlaying}
+            onVideoEnd={handleVideoEnd}
+            fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
           />
           
           {/* AI Interviewer Label */}
