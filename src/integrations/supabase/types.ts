@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cv_analyses: {
+        Row: {
+          analysis_result: Json | null
+          ats_score: number | null
+          company: string
+          created_at: string
+          id: string
+          industry: string
+          job_title: string
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          ats_score?: number | null
+          company: string
+          created_at?: string
+          id?: string
+          industry: string
+          job_title: string
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          ats_score?: number | null
+          company?: string
+          created_at?: string
+          id?: string
+          industry?: string
+          job_title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       interview_results: {
         Row: {
           company_name: string | null

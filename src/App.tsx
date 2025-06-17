@@ -20,6 +20,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
 import AIVideoInterview from "./pages/AIVideoInterview";
+import CVChecker from "./pages/CVChecker";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const AnimatedRoutes = () => {
         <Route path="/dashboard/profile" element={<ProfilePage />} />
         <Route path="/dashboard/analytics" element={<Analytics />} />
         <Route path="/dashboard/history" element={<History />} />
+        <Route path="/dashboard/cv-checker" element={<CVChecker />} />
         <Route path="/dashboard/:section" element={<ComingSoonPlaceholder />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
