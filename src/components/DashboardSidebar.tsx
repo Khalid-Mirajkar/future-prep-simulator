@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,6 +8,7 @@ import {
   Users,
   FileText,
   BookOpen,
+  FileCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -35,6 +35,11 @@ const sidebarItems = [
     title: "History",
     icon: History,
     href: "/dashboard/history",
+  },
+  {
+    title: "CV Checker",
+    icon: FileCheck,
+    href: "/dashboard/cv-checker",
   },
   {
     title: "Feedback",

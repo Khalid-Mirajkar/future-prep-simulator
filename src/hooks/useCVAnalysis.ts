@@ -31,23 +31,34 @@ export const useCVAnalysis = () => {
   const { toast } = useToast();
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
-    // Simple PDF text extraction - in production, you might want to use a more robust solution
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const arrayBuffer = e.target?.result as ArrayBuffer;
-        try {
-          // For now, we'll use a simple approach - you might want to integrate pdf-parse or similar
-          // This is a placeholder that will work with text-based PDFs
-          const text = new TextDecoder().decode(arrayBuffer);
-          resolve(text);
-        } catch (error) {
-          console.error('PDF extraction error:', error);
-          resolve('Unable to extract text from PDF. Please ensure your CV is text-based and try again.');
+    try {
+      // For now, we'll use a simple text extraction approach
+      // In a production environment, you'd want to use a more robust PDF parsing solution
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Simple text extraction - this is a basic approach
+      // For better results, consider using pdf-parse on the server side
+      let text = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        const char = String.fromCharCode(uint8Array[i]);
+        if (char.match(/[a-zA-Z0-9\s\.,;:!?\-]/)) {
+          text += char;
         }
-      };
-      reader.readAsArrayBuffer(file);
-    });
+      }
+      
+      // Clean up the extracted text
+      text = text.replace(/\s+/g, ' ').trim();
+      
+      if (text.length < 50) {
+        throw new Error('Unable to extract sufficient text from PDF. Please ensure your CV contains readable text.');
+      }
+      
+      return text;
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      throw new Error('Unable to extract text from PDF. Please ensure your CV is text-based and try again.');
+    }
   };
 
   const analyzeCV = async (file: File, industry: string, jobTitle: string, company: string) => {
@@ -120,7 +131,14 @@ export const useCVAnalysis = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAnalysisHistory(data || []);
+      
+      // Type cast the data to match our interface
+      const typedData: CVAnalysisData[] = (data || []).map(item => ({
+        ...item,
+        analysis_result: item.analysis_result as CVAnalysisResult
+      }));
+      
+      setAnalysisHistory(typedData);
     } catch (error) {
       console.error('Error fetching analysis history:', error);
       toast({
