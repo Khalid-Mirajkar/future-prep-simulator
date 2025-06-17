@@ -7,10 +7,13 @@ interface CVAnalysisResult {
   atsScore: number;
   relevanceScore: number;
   missingKeywords: string[];
+  missingSkills: string[];
   redFlags: string[];
   suggestions: string[];
   revisedSummary: string;
   overallFeedback: string;
+  wordCount?: number;
+  isShortCV?: boolean;
 }
 
 interface CVAnalysisData {
@@ -32,17 +35,14 @@ export const useCVAnalysis = () => {
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
     try {
-      // For now, we'll use a simple text extraction approach
-      // In a production environment, you'd want to use a more robust PDF parsing solution
       const arrayBuffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
       
-      // Simple text extraction - this is a basic approach
-      // For better results, consider using pdf-parse on the server side
+      // Improved text extraction
       let text = '';
       for (let i = 0; i < uint8Array.length; i++) {
         const char = String.fromCharCode(uint8Array[i]);
-        if (char.match(/[a-zA-Z0-9\s\.,;:!?\-]/)) {
+        if (char.match(/[a-zA-Z0-9\s\.,;:!?\-()@]/)) {
           text += char;
         }
       }
@@ -50,7 +50,8 @@ export const useCVAnalysis = () => {
       // Clean up the extracted text
       text = text.replace(/\s+/g, ' ').trim();
       
-      if (text.length < 50) {
+      // More lenient minimum - we'll handle short CVs gracefully
+      if (text.length < 30) {
         throw new Error('Unable to extract sufficient text from PDF. Please ensure your CV contains readable text.');
       }
       
@@ -68,9 +69,13 @@ export const useCVAnalysis = () => {
       // Extract text from PDF
       const cvText = await extractTextFromPDF(file);
       
-      if (!cvText || cvText.length < 50) {
+      if (!cvText || cvText.length < 30) {
         throw new Error('Unable to extract sufficient text from PDF. Please ensure your CV is text-based.');
       }
+
+      // Count words for short CV detection
+      const wordCount = cvText.split(/\s+/).length;
+      const isShortCV = wordCount < 200;
 
       // Call the edge function for analysis
       const { data, error } = await supabase.functions.invoke('analyze-cv', {
@@ -78,7 +83,9 @@ export const useCVAnalysis = () => {
           cvText,
           industry,
           jobTitle,
-          company
+          company,
+          wordCount,
+          isShortCV
         }
       });
 
@@ -102,9 +109,11 @@ export const useCVAnalysis = () => {
 
       setAnalysisResult(data);
       
+      const shortCVMessage = isShortCV ? " (Note: Consider adding more content for a more comprehensive analysis)" : "";
+      
       toast({
         title: "CV Analysis Complete",
-        description: `Your CV scored ${data.atsScore}/100 for ATS compatibility.`,
+        description: `Your CV scored ${data.atsScore}/100 for ATS compatibility.${shortCVMessage}`,
       });
 
       return data;
@@ -132,10 +141,10 @@ export const useCVAnalysis = () => {
 
       if (error) throw error;
       
-      // Type cast the data to match our interface
+      // Fix the type conversion issue
       const typedData: CVAnalysisData[] = (data || []).map(item => ({
         ...item,
-        analysis_result: item.analysis_result as CVAnalysisResult
+        analysis_result: (item.analysis_result as unknown) as CVAnalysisResult
       }));
       
       setAnalysisHistory(typedData);
