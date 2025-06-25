@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,7 +53,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     toggleVideo, 
     toggleAudio, 
     initializeCamera,
-    stopCamera 
+    stopCamera,
+    hasPermissionError
   } = useUserCamera();
   const { 
     isListening, 
@@ -300,6 +300,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                     videoRef={videoRef}
                     isVideoEnabled={isVideoEnabled}
                     onInitialize={initializeCamera}
+                    hasPermissionError={hasPermissionError}
+                    showPreviewLabel={true}
                   />
                 </div>
               </div>
@@ -312,7 +314,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                   onClick={toggleAudio}
                   variant="ghost"
                   size="icon"
-                  className={`rounded-full w-14 h-14 ${
+                  className={`rounded-full w-14 h-14 transition-all duration-200 ${
                     isAudioEnabled 
                       ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                       : 'bg-red-600 hover:bg-red-700 text-white'
@@ -325,7 +327,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                   onClick={toggleVideo}
                   variant="ghost"
                   size="icon"
-                  className={`rounded-full w-14 h-14 ${
+                  className={`rounded-full w-14 h-14 transition-all duration-200 ${
                     isVideoEnabled 
                       ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                       : 'bg-red-600 hover:bg-red-700 text-white'
@@ -342,7 +344,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                 <Button 
                   onClick={startInterview}
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-4 text-lg rounded-xl transition-all duration-200 hover:scale-105"
+                  className="bg-gradient-to-r from-neon-purple to-neon-blue text-white hover:shadow-[0_0_25px_rgba(155,135,245,0.8)] hover:scale-105 font-semibold px-12 py-4 text-lg rounded-xl transition-all duration-300"
                 >
                   Start Interview
                 </Button>
@@ -416,6 +418,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
             onInitialize={initializeCamera}
             subtitle={transcript}
             isListening={isListening}
+            hasPermissionError={hasPermissionError}
           />
         </div>
       </div>
