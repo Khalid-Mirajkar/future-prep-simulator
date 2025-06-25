@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -74,6 +74,10 @@ export default function Auth() {
     }
   };
 
+  const handleReturnHome = () => {
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6 backdrop-blur-md bg-black/30 rounded-xl border border-white/10">
@@ -129,6 +133,17 @@ export default function Auth() {
             ? "Don't have an account? Sign Up"
             : "Already have an account? Sign In"}
         </button>
+        
+        {/* Return to Home Link */}
+        <div className="pt-4 border-t border-white/10">
+          <button
+            onClick={handleReturnHome}
+            className="flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-white transition-colors w-full text-center group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Return to Home
+          </button>
+        </div>
       </div>
 
       <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
