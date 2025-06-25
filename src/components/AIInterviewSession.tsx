@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,8 +7,8 @@ import { useUserCamera } from '@/hooks/useUserCamera';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import DIDAvatar from '@/components/DIDAvatar';
 import UserVideoFeed from '@/components/UserVideoFeed';
-import SubtitleDisplay from '@/components/SubtitleDisplay';
 import InterviewControls from '@/components/InterviewControls';
+import { Mic, MicOff, Camera, CameraOff, Users, Clock } from 'lucide-react';
 
 interface InterviewQuestion {
   id: number;
@@ -42,8 +43,9 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [questionStartTime, setQuestionStartTime] = useState<number>(0);
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
+  const [showSubtitles, setShowSubtitles] = useState(true);
+  const [conversationState, setConversationState] = useState<'greeting' | 'question' | 'waiting' | 'transitioning'>('greeting');
 
-  // Updated to use D-ID avatar instead of custom avatar
   const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
   const { 
     videoRef, 
@@ -62,7 +64,6 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     resetTranscript 
   } = useSpeechRecognition();
 
-  // Sample interview questions
   const questions: InterviewQuestion[] = [
     {
       id: 1,
@@ -94,48 +95,73 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const startInterview = async () => {
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
+    setConversationState('greeting');
     
-    // Avatar greeting with D-ID
-    const greetingText = `Hi there! Welcome to your mock interview for the ${jobTitle} position at ${companyName}. I'm excited to get to know you better. Let's begin with our first question.`;
+    // Initial greeting
+    const greetingText = `Hi! I'm your AI Interviewer for the role of ${jobTitle} at ${companyName}. It's great to meet you. Before we begin, how are you feeling today?`;
     setCurrentSubtitle(greetingText);
     await speakText(greetingText);
     
-    // Start first question after greeting finishes
+    // Start listening for response after greeting
     setTimeout(() => {
-      askCurrentQuestion();
-    }, 3000); // Increased delay to ensure greeting finishes
+      setConversationState('waiting');
+      setIsWaitingForAnswer(true);
+      startListening();
+    }, 2000);
+  };
+
+  const handleGreetingResponse = async () => {
+    if (transcript.trim()) {
+      console.log('User responded to greeting:', transcript);
+      setConversationState('transitioning');
+      setIsWaitingForAnswer(false);
+      stopListening();
+      
+      // Acknowledge response and move to first question
+      const transitionText = "Great! I appreciate you sharing that with me. Now let's dive into our interview questions.";
+      setCurrentSubtitle(transitionText);
+      await speakText(transitionText);
+      
+      resetTranscript();
+      
+      setTimeout(() => {
+        askCurrentQuestion();
+      }, 2000);
+    }
   };
 
   const askCurrentQuestion = async () => {
     if (currentQuestionIndex < questions.length) {
       const question = questions[currentQuestionIndex];
       setQuestionStartTime(Date.now());
-      setIsWaitingForAnswer(false);
+      setConversationState('question');
       
       console.log('Asking question:', question.question);
       setCurrentSubtitle(question.question);
       await speakText(question.question);
       
-      // Start listening after avatar finishes speaking
+      // Start listening after question finishes
       setTimeout(() => {
         console.log('Starting to listen for answer...');
+        setConversationState('waiting');
         setIsWaitingForAnswer(true);
-        setCurrentSubtitle('');
         startListening();
-      }, 3000); // Increased delay to ensure question finishes
+      }, 2000);
     }
   };
 
   const submitAnswer = async () => {
     if (!transcript.trim()) return;
 
+    console.log('Submitting answer:', transcript);
     stopListening();
     setIsWaitingForAnswer(false);
+    setConversationState('transitioning');
     
     const question = questions[currentQuestionIndex];
     const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
     
-    // Evaluate the response (placeholder for now)
+    // Evaluate the response
     const evaluation = await evaluateResponse(question.question, transcript);
     
     const response: InterviewResponse = {
@@ -148,6 +174,18 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     };
 
     setResponses(prev => [...prev, response]);
+    
+    // Acknowledge the answer
+    const acknowledgments = [
+      "Thank you for that detailed response.",
+      "I appreciate your thoughtful answer.",
+      "That's a great perspective, thank you.",
+      "Thank you for sharing that with me."
+    ];
+    const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+    setCurrentSubtitle(acknowledgment);
+    await speakText(acknowledgment);
+    
     resetTranscript();
     
     // Move to next question or end interview
@@ -157,12 +195,13 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         askCurrentQuestion();
       }, 2000);
     } else {
-      endInterview();
+      setTimeout(() => {
+        endInterview();
+      }, 2000);
     }
   };
 
   const evaluateResponse = async (question: string, answer: string): Promise<{ score: number; feedback: string }> => {
-    // Placeholder evaluation
     const wordCount = answer.split(' ').length;
     const score = Math.min(10, Math.max(1, Math.round(wordCount / 10)));
     const feedback = wordCount > 20 ? "Good detailed response!" : "Consider providing more specific examples.";
@@ -179,73 +218,136 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setTimeout(() => {
       stopCamera();
       onInterviewComplete(responses, totalTime);
-    }, 5000);
+    }, 4000);
   };
 
   const handleEndCall = () => {
     stopCamera();
     stopListening();
-    // Navigate back or end interview
     window.history.back();
   };
 
   const handleVideoEnd = () => {
-    console.log('D-ID video ended, clearing subtitle');
-    setCurrentSubtitle('');
+    console.log('Video ended, clearing subtitle');
+    if (conversationState === 'waiting') {
+      setCurrentSubtitle('');
+    }
   };
 
-  // Auto-submit answer when user stops talking for 3 seconds
+  // Handle conversation flow
   useEffect(() => {
-    if (isWaitingForAnswer && transcript && !isListening) {
-      console.log('User stopped talking, starting timer to submit answer...');
+    if (conversationState === 'waiting' && transcript && !isListening) {
       const timer = setTimeout(() => {
-        console.log('Auto-submitting answer:', transcript);
-        submitAnswer();
-      }, 3000);
+        if (currentQuestionIndex === -1) { // Greeting phase
+          handleGreetingResponse();
+        } else {
+          submitAnswer();
+        }
+      }, 2000);
       
       return () => clearTimeout(timer);
     }
-  }, [isWaitingForAnswer, transcript, isListening]);
+  }, [conversationState, transcript, isListening, currentQuestionIndex]);
 
-  // Handle microphone permission
-  useEffect(() => {
-    const requestMicrophonePermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('Microphone permission granted');
-      } catch (error) {
-        console.error('Microphone permission denied:', error);
-      }
-    };
-
-    if (interviewStarted) {
-      requestMicrophonePermission();
-    }
-  }, [interviewStarted]);
-
+  // Pre-interview setup screen
   if (!interviewStarted) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col">
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center space-y-6 max-w-md">
-            <DIDAvatar
-              videoUrl={currentVideoUrl}
-              isGenerating={isGenerating}
-              isPlaying={isPlaying}
-              onVideoEnd={handleVideoEnd}
-              fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
-            />
-            <div>
-              <h2 className="text-2xl font-semibold mb-2">Meet Your AI Interviewer</h2>
-              <p className="text-gray-400">Ready to conduct your interview simulation</p>
+      <div className="min-h-screen bg-[#0D0D0D] text-white">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-xl font-semibold">AI Interview</h1>
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-400">{companyName} - {jobTitle}</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <Users className="h-4 w-4" />
+              <span>2 participants</span>
             </div>
-            <Button 
-              onClick={startInterview}
-              size="lg"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-4 text-lg rounded-xl"
-            >
-              Start Interview
-            </Button>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="max-w-4xl w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* AI Interviewer Preview */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium text-center">AI Interviewer</h2>
+                <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video">
+                  <DIDAvatar
+                    videoUrl={currentVideoUrl}
+                    isGenerating={isGenerating}
+                    isPlaying={isPlaying}
+                    onVideoEnd={handleVideoEnd}
+                    fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
+                  />
+                  
+                  <div className="absolute bottom-3 left-3">
+                    <div className="bg-black/60 px-2 py-1 rounded text-xs">
+                      AI Interviewer
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Preview */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium text-center">You</h2>
+                <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video">
+                  <UserVideoFeed
+                    videoRef={videoRef}
+                    isVideoEnabled={isVideoEnabled}
+                    onInitialize={initializeCamera}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="mt-8 flex flex-col items-center space-y-6">
+              <div className="flex items-center space-x-6">
+                <Button
+                  onClick={toggleAudio}
+                  variant="ghost"
+                  size="icon"
+                  className={`rounded-full w-14 h-14 ${
+                    isAudioEnabled 
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  {isAudioEnabled ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+                </Button>
+
+                <Button
+                  onClick={toggleVideo}
+                  variant="ghost"
+                  size="icon"
+                  className={`rounded-full w-14 h-14 ${
+                    isVideoEnabled 
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white' 
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                >
+                  {isVideoEnabled ? <Camera className="h-6 w-6" /> : <CameraOff className="h-6 w-6" />}
+                </Button>
+              </div>
+
+              <div className="text-center space-y-2">
+                <p className="text-gray-400 text-sm">
+                  Make sure your camera and microphone are working properly
+                </p>
+                <Button 
+                  onClick={startInterview}
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-12 py-4 text-lg rounded-xl transition-all duration-200 hover:scale-105"
+                >
+                  Start Interview
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -256,9 +358,29 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white relative overflow-hidden">
-      {/* Main Video Grid - Split Screen Layout */}
-      <div className="absolute inset-0 grid grid-cols-1 lg:grid-cols-2 gap-1 p-1 pb-20">
-        {/* AI Interviewer Video */}
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-b border-gray-700 z-20">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center space-x-3">
+            <h1 className="text-white font-semibold">AI Interview</h1>
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-400 text-sm">{companyName} - {jobTitle}</span>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-gray-400">
+              <Clock className="h-4 w-4" />
+              <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+            </div>
+            <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+              REC
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Video Grid */}
+      <div className="absolute inset-0 pt-16 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-2 p-2">
+        {/* AI Interviewer */}
         <div className="relative bg-gray-900 rounded-lg overflow-hidden">
           <DIDAvatar
             videoUrl={currentVideoUrl}
@@ -268,20 +390,22 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
             fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
           />
           
-          {/* AI Interviewer Label */}
           <div className="absolute bottom-3 left-3">
-            <div className="bg-black/60 px-2 py-1 rounded text-white text-xs font-medium">
+            <div className="bg-black/60 px-2 py-1 rounded text-xs">
               AI Interviewer
             </div>
           </div>
 
-          {/* AI Subtitles Overlay */}
-          <SubtitleDisplay
-            text={currentSubtitle}
-            isActive={isPlaying}
-            title="AI Interviewer"
-            isOverlay={true}
-          />
+          {/* Subtitles */}
+          {showSubtitles && currentSubtitle && (
+            <div className="absolute bottom-16 left-4 right-4">
+              <div className="bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2">
+                <p className="text-white text-sm text-center leading-relaxed">
+                  {currentSubtitle}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* User Video */}
@@ -296,34 +420,15 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         </div>
       </div>
 
-      {/* Top Bar with Meeting Info */}
-      <div className="absolute top-0 left-0 right-0 bg-gray-900/90 backdrop-blur-sm border-b border-gray-700 z-10">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-white font-semibold">AI Interview Session</h1>
-            <span className="text-gray-400">•</span>
-            <span className="text-gray-400 text-sm">{companyName} - {jobTitle}</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-400">
-              Question {currentQuestionIndex + 1} of {questions.length}
-            </div>
-            <div className="bg-red-500 text-white px-2 py-1 rounded text-xs">
-              REC
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Current Question Overlay */}
-      {currentQuestion && (
+      {currentQuestion && conversationState === 'question' && (
         <div className="absolute top-20 left-4 right-4 z-10">
           <Card className="bg-gray-900/90 backdrop-blur-sm border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-purple-400 font-medium">{currentQuestion.category}</span>
+                <span className="text-xs text-blue-400 font-medium">{currentQuestion.category}</span>
                 {isWaitingForAnswer && (
-                  <span className="text-xs text-blue-400 animate-pulse">Listening for your response...</span>
+                  <span className="text-xs text-green-400 animate-pulse">Listening...</span>
                 )}
               </div>
               <p className="text-white text-sm">{currentQuestion.question}</p>
@@ -332,7 +437,18 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         </div>
       )}
 
-      {/* Video Call Controls */}
+      {/* Conversation Status */}
+      {conversationState === 'waiting' && (
+        <div className="absolute bottom-24 left-4 right-4 z-10">
+          <div className="bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 rounded-lg px-4 py-2">
+            <p className="text-blue-300 text-sm text-center">
+              {currentQuestionIndex === -1 ? "Please share how you're feeling today..." : "Please share your response..."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Controls */}
       <InterviewControls
         isVideoEnabled={isVideoEnabled}
         isAudioEnabled={isAudioEnabled}

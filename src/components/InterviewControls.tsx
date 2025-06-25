@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, CameraOff, Mic, MicOff, Phone, MoreHorizontal, Users, MessageSquare, Share } from 'lucide-react';
+import { Camera, CameraOff, Mic, MicOff, Phone, Settings, Users, MessageSquare } from 'lucide-react';
 
 interface InterviewControlsProps {
   isVideoEnabled: boolean;
@@ -23,19 +23,19 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left side - Meeting info */}
         <div className="flex items-center space-x-4">
-          <div className="text-white text-sm">
-            <span className="text-gray-400">Interview Session</span>
+          <div className="text-white text-sm font-medium">
+            AI Interview Session
           </div>
         </div>
 
         {/* Center - Main controls */}
-        <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-4">
           {/* Audio Toggle */}
           <Button
             onClick={onToggleAudio}
             variant="ghost"
             size="icon"
-            className={`rounded-full w-12 h-12 ${
+            className={`rounded-full w-12 h-12 transition-all duration-200 ${
               isAudioEnabled 
                 ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                 : 'bg-red-600 hover:bg-red-700 text-white'
@@ -49,7 +49,7 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
             onClick={onToggleVideo}
             variant="ghost"
             size="icon"
-            className={`rounded-full w-12 h-12 ${
+            className={`rounded-full w-12 h-12 transition-all duration-200 ${
               isVideoEnabled 
                 ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                 : 'bg-red-600 hover:bg-red-700 text-white'
@@ -63,46 +63,34 @@ const InterviewControls: React.FC<InterviewControlsProps> = ({
             onClick={onEndCall}
             variant="ghost"
             size="icon"
-            className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-700 text-white"
+            className="rounded-full w-12 h-12 bg-red-600 hover:bg-red-700 text-white transition-all duration-200 hover:scale-105"
           >
             <Phone className="h-5 w-5 rotate-135" />
-          </Button>
-
-          {/* Share Screen (disabled for now) */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <Share className="h-5 w-5" />
-          </Button>
-
-          {/* More options */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full w-12 h-12 bg-gray-700 hover:bg-gray-600 text-white"
-          >
-            <MoreHorizontal className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Right side - Additional controls */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-10 h-10 bg-gray-700 hover:bg-gray-600 text-white"
+            className="rounded-full w-10 h-10 bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200"
           >
             <Users className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full w-10 h-10 bg-gray-700 hover:bg-gray-600 text-white"
+            className="rounded-full w-10 h-10 bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200"
           >
             <MessageSquare className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full w-10 h-10 bg-gray-700 hover:bg-gray-600 text-white transition-all duration-200"
+          >
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>
