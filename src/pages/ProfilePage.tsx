@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
@@ -9,10 +8,11 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Home, Menu } from "lucide-react";
+import { Home, Menu, LogOut } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfilePage = () => {
   const { profile, loading, updateProfile, fetchProfile } = useProfile();
@@ -75,6 +75,27 @@ const ProfilePage = () => {
       
       // Refetch profile data to ensure we have the latest data
       fetchProfile();
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+      });
     }
   };
 
@@ -182,9 +203,21 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                  Save Changes
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                    Save Changes
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleLogout}
+                    className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </Button>
+                </div>
               </form>
             </Card>
           </div>
