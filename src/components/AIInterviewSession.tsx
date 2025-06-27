@@ -49,6 +49,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [speechEndTimer, setSpeechEndTimer] = useState<NodeJS.Timeout | null>(null);
   const [isGreetingPhase, setIsGreetingPhase] = useState(true);
   const [lastTranscript, setLastTranscript] = useState('');
+  const [isProcessingResponse, setIsProcessingResponse] = useState(false);
 
   const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
   const { 
@@ -109,25 +110,40 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   };
 
-  // Set inactivity timer
+  // Clean state for next question
+  const cleanStateForNextQuestion = () => {
+    console.log('🧹 Cleaning state for next question...');
+    clearAllTimers();
+    stopListening();
+    resetTranscript();
+    setLastTranscript('');
+    setIsWaitingForAnswer(false);
+    setIsProcessingResponse(false);
+    setCurrentSubtitle('');
+  };
+
+  // Set inactivity timer (increased to 10 seconds as requested)
   const setInactivityTimeout = () => {
     clearAllTimers();
     const timer = setTimeout(() => {
-      if (isWaitingForAnswer && conversationState === 'waiting') {
+      if (isWaitingForAnswer && conversationState === 'waiting' && !isProcessingResponse) {
         handleInactivity();
       }
-    }, 15000); // 15 seconds
+    }, 10000); // 10 seconds as requested
     setInactivityTimer(timer);
   };
 
   const handleInactivity = async () => {
-    const promptText = "Whenever you're ready, feel free to respond!";
+    console.log('⏰ Handling inactivity...');
+    const promptText = "Still there? Feel free to answer when you're ready.";
     setCurrentSubtitle(promptText);
     await speakText(promptText);
     
     // Restart listening after prompt
     setTimeout(() => {
-      if (isWaitingForAnswer && conversationState === 'waiting') {
+      if (isWaitingForAnswer && conversationState === 'waiting' && !isProcessingResponse) {
+        console.log('🔄 Restarting listening after inactivity prompt...');
+        resetTranscript();
         startListening();
         setInactivityTimeout();
       }
@@ -135,6 +151,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const startInterview = async () => {
+    console.log('🎬 Starting interview...');
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     setConversationState('greeting');
@@ -147,20 +164,27 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     
     // Start listening for response after greeting
     setTimeout(() => {
-      console.log('Starting to listen for greeting response...');
+      console.log('👂 Starting to listen for greeting response...');
       setConversationState('waiting');
       setIsWaitingForAnswer(true);
+      resetTranscript();
+      setLastTranscript('');
       startListening();
       setInactivityTimeout();
     }, 2000);
   };
 
   const handleGreetingResponse = async (userResponse: string) => {
-    console.log('Processing greeting response:', userResponse);
-    clearAllTimers();
+    console.log('📝 Processing greeting response:', userResponse);
+    
+    if (isProcessingResponse) {
+      console.log('⚠️ Already processing response, ignoring...');
+      return;
+    }
+    
+    setIsProcessingResponse(true);
+    cleanStateForNextQuestion();
     setConversationState('acknowledging');
-    setIsWaitingForAnswer(false);
-    stopListening();
     
     // Acknowledge response and move to first question
     const acknowledgments = [
@@ -173,9 +197,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setCurrentSubtitle(acknowledgment);
     await speakText(acknowledgment);
     
-    resetTranscript();
-    setLastTranscript('');
     setIsGreetingPhase(false);
+    setIsProcessingResponse(false);
     
     setTimeout(() => {
       askCurrentQuestion();
@@ -185,18 +208,22 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const askCurrentQuestion = async () => {
     if (currentQuestionIndex < questions.length) {
       const question = questions[currentQuestionIndex];
+      console.log(`❓ Asking question ${currentQuestionIndex + 1}:`, question.question);
+      
+      cleanStateForNextQuestion();
       setQuestionStartTime(Date.now());
       setConversationState('question');
       
-      console.log('Asking question:', question.question);
       setCurrentSubtitle(question.question);
       await speakText(question.question);
       
-      // Start listening after question finishes
+      // Start listening after question finishes with a fresh state
       setTimeout(() => {
-        console.log('Starting to listen for answer...');
+        console.log(`👂 Starting to listen for answer to question ${currentQuestionIndex + 1}...`);
         setConversationState('waiting');
         setIsWaitingForAnswer(true);
+        resetTranscript();
+        setLastTranscript('');
         startListening();
         setInactivityTimeout();
       }, 2000);
@@ -204,10 +231,15 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const submitAnswer = async (userAnswer: string) => {
-    console.log('Submitting answer:', userAnswer);
-    clearAllTimers();
-    stopListening();
-    setIsWaitingForAnswer(false);
+    console.log(`✅ Submitting answer for question ${currentQuestionIndex + 1}:`, userAnswer);
+    
+    if (isProcessingResponse) {
+      console.log('⚠️ Already processing response, ignoring...');
+      return;
+    }
+    
+    setIsProcessingResponse(true);
+    cleanStateForNextQuestion();
     setConversationState('acknowledging');
     
     const question = questions[currentQuestionIndex];
@@ -237,8 +269,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setCurrentSubtitle(acknowledgment);
     await speakText(acknowledgment);
     
-    resetTranscript();
-    setLastTranscript('');
+    setIsProcessingResponse(false);
     
     // Move to next question or end interview
     if (currentQuestionIndex < questions.length - 1) {
@@ -262,7 +293,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const endInterview = async () => {
-    clearAllTimers();
+    console.log('🏁 Ending interview...');
+    cleanStateForNextQuestion();
     const endingText = "Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!";
     setCurrentSubtitle(endingText);
     await speakText(endingText);
@@ -275,14 +307,13 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const handleEndCall = () => {
-    clearAllTimers();
+    cleanStateForNextQuestion();
     stopCamera();
-    stopListening();
     window.history.back();
   };
 
   const handleVideoEnd = () => {
-    console.log('Video ended, clearing subtitle');
+    console.log('🎥 Video ended, clearing subtitle');
     if (conversationState === 'waiting') {
       setCurrentSubtitle('');
     }
@@ -290,8 +321,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
   // Enhanced speech detection with proper end-of-speech detection
   useEffect(() => {
-    if (transcript && transcript.trim().length > 0) {
-      console.log('Transcript updated:', transcript);
+    if (transcript && transcript.trim().length > 0 && !isProcessingResponse) {
+      console.log('📝 Transcript updated:', transcript);
       
       // Clear any existing speech end timer
       if (speechEndTimer) {
@@ -299,11 +330,11 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         setSpeechEndTimer(null);
       }
       
-      // Set new timer to detect end of speech
+      // Set new timer to detect end of speech (reduced to 1.5 seconds as requested)
       const timer = setTimeout(() => {
-        console.log('Speech end detected, processing response...');
+        console.log('⏹️ Speech end detected, processing response...');
         
-        if (conversationState === 'waiting' && transcript.trim() && transcript !== lastTranscript) {
+        if (conversationState === 'waiting' && transcript.trim() && transcript !== lastTranscript && !isProcessingResponse) {
           setLastTranscript(transcript);
           
           if (isGreetingPhase) {
@@ -312,7 +343,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
             submitAnswer(transcript);
           }
         }
-      }, 1500); // 1.5 seconds of silence
+      }, 1500); // 1.5 seconds as requested
       
       setSpeechEndTimer(timer);
       
@@ -322,7 +353,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         setInactivityTimer(null);
       }
     }
-  }, [transcript, conversationState, isGreetingPhase, lastTranscript]);
+  }, [transcript, conversationState, isGreetingPhase, lastTranscript, isProcessingResponse]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -464,14 +495,28 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         </div>
       </div>
 
-      {/* Debug Status Indicator */}
+      {/* Enhanced Debug Status Indicator */}
       <div className="absolute bottom-24 left-4 z-30">
         <div className="bg-black/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-300">
-          {conversationState === 'greeting' && '🟢 AI Speaking...'}
-          {conversationState === 'question' && '🟢 AI Asking Question...'}
-          {conversationState === 'waiting' && '🟡 Listening for your response...'}
-          {conversationState === 'acknowledging' && '🔵 AI Acknowledging...'}
-          {conversationState === 'transitioning' && '🔄 Moving to next question...'}
+          <div className="flex flex-col space-y-1">
+            <div>
+              {conversationState === 'greeting' && '🟢 AI Speaking (Greeting)...'}
+              {conversationState === 'question' && `🟢 AI Asking Question ${currentQuestionIndex + 1}...`}
+              {conversationState === 'waiting' && `🟡 Listening for Q${currentQuestionIndex + 1} response...`}
+              {conversationState === 'acknowledging' && '🔵 AI Acknowledging...'}
+              {conversationState === 'transitioning' && '🔄 Moving to next question...'}
+            </div>
+            {lastTranscript && (
+              <div className="text-gray-400 text-xs max-w-48 truncate">
+                Last: "{lastTranscript}"
+              </div>
+            )}
+            {isProcessingResponse && (
+              <div className="text-yellow-400 text-xs">
+                🔄 Processing response...
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
