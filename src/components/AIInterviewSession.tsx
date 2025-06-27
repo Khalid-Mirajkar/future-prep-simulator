@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +45,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [conversationState, setConversationState] = useState<'greeting' | 'question' | 'waiting' | 'transitioning'>('greeting');
+  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isGreetingPhase, setIsGreetingPhase] = useState(true);
 
   const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
   const { 
@@ -92,10 +95,44 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   ];
 
+  // Clear inactivity timer
+  const clearInactivityTimer = () => {
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+      setInactivityTimer(null);
+    }
+  };
+
+  // Set inactivity timer
+  const setInactivityTimeout = () => {
+    clearInactivityTimer();
+    const timer = setTimeout(() => {
+      if (isWaitingForAnswer) {
+        handleInactivity();
+      }
+    }, 15000); // 15 seconds
+    setInactivityTimer(timer);
+  };
+
+  const handleInactivity = async () => {
+    const promptText = "Still there? Feel free to answer when you're ready.";
+    setCurrentSubtitle(promptText);
+    await speakText(promptText);
+    
+    // Restart listening after prompt
+    setTimeout(() => {
+      if (isWaitingForAnswer) {
+        startListening();
+        setInactivityTimeout();
+      }
+    }, 3000);
+  };
+
   const startInterview = async () => {
     setInterviewStarted(true);
     setInterviewStartTime(Date.now());
     setConversationState('greeting');
+    setIsGreetingPhase(true);
     
     // Initial greeting
     const greetingText = `Hi! I'm your AI Interviewer for the role of ${jobTitle} at ${companyName}. It's great to meet you. Before we begin, how are you feeling today?`;
@@ -104,25 +141,36 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     
     // Start listening for response after greeting
     setTimeout(() => {
+      console.log('Starting to listen for greeting response...');
       setConversationState('waiting');
       setIsWaitingForAnswer(true);
       startListening();
+      setInactivityTimeout();
     }, 2000);
   };
 
   const handleGreetingResponse = async () => {
     if (transcript.trim()) {
       console.log('User responded to greeting:', transcript);
+      clearInactivityTimer();
       setConversationState('transitioning');
       setIsWaitingForAnswer(false);
       stopListening();
       
       // Acknowledge response and move to first question
-      const transitionText = "Great! I appreciate you sharing that with me. Now let's dive into our interview questions.";
+      const acknowledgments = [
+        "Got it, thank you!",
+        "Great to hear that!",
+        "Thank you for sharing that with me."
+      ];
+      const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+      const transitionText = `${acknowledgment} Now let's dive into our interview questions.`;
+      
       setCurrentSubtitle(transitionText);
       await speakText(transitionText);
       
       resetTranscript();
+      setIsGreetingPhase(false);
       
       setTimeout(() => {
         askCurrentQuestion();
@@ -146,6 +194,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         setConversationState('waiting');
         setIsWaitingForAnswer(true);
         startListening();
+        setInactivityTimeout();
       }, 2000);
     }
   };
@@ -154,6 +203,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     if (!transcript.trim()) return;
 
     console.log('Submitting answer:', transcript);
+    clearInactivityTimer();
     stopListening();
     setIsWaitingForAnswer(false);
     setConversationState('transitioning');
@@ -210,6 +260,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const endInterview = async () => {
+    clearInactivityTimer();
     const endingText = "Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!";
     setCurrentSubtitle(endingText);
     await speakText(endingText);
@@ -222,6 +273,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const handleEndCall = () => {
+    clearInactivityTimer();
     stopCamera();
     stopListening();
     window.history.back();
@@ -234,20 +286,36 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   };
 
-  // Handle conversation flow
+  // Enhanced conversation flow detection
   useEffect(() => {
-    if (conversationState === 'waiting' && transcript && !isListening) {
-      const timer = setTimeout(() => {
-        if (currentQuestionIndex === -1) { // Greeting phase
-          handleGreetingResponse();
-        } else {
-          submitAnswer();
+    if (transcript && transcript.trim().length > 0) {
+      console.log('Transcript updated:', transcript);
+      
+      // Reset inactivity timer when user starts speaking
+      clearInactivityTimer();
+      
+      // Check if user has stopped speaking (transcript hasn't changed for 2 seconds)
+      const checkSpeechEnd = setTimeout(() => {
+        if (conversationState === 'waiting' && transcript.trim() && !isListening) {
+          console.log('Speech ended, processing response...');
+          if (isGreetingPhase) {
+            handleGreetingResponse();
+          } else {
+            submitAnswer();
+          }
         }
       }, 2000);
-      
-      return () => clearTimeout(timer);
+
+      return () => clearTimeout(checkSpeechEnd);
     }
-  }, [conversationState, transcript, isListening, currentQuestionIndex]);
+  }, [transcript, conversationState, isListening, isGreetingPhase]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      clearInactivityTimer();
+    };
+  }, []);
 
   // Pre-interview setup screen
   if (!interviewStarted) {
@@ -344,7 +412,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                 <Button 
                   onClick={startInterview}
                   size="lg"
-                  className="bg-gradient-to-r from-neon-purple to-neon-blue text-white hover:shadow-[0_0_25px_rgba(155,135,245,0.8)] hover:scale-105 font-semibold px-12 py-4 text-lg rounded-xl transition-all duration-300"
+                  className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:scale-105 font-semibold px-12 py-4 text-lg rounded-xl transition-all duration-300 border border-white/20"
                 >
                   Start Interview
                 </Button>
@@ -371,7 +439,9 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-gray-400">
               <Clock className="h-4 w-4" />
-              <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+              <span>
+                {isGreetingPhase ? 'Greeting' : `Question ${currentQuestionIndex + 1} of ${questions.length}`}
+              </span>
             </div>
             <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium">
               REC
@@ -424,7 +494,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       </div>
 
       {/* Current Question Overlay */}
-      {currentQuestion && conversationState === 'question' && (
+      {currentQuestion && conversationState === 'question' && !isGreetingPhase && (
         <div className="absolute top-20 left-4 right-4 z-10">
           <Card className="bg-gray-900/90 backdrop-blur-sm border-gray-700">
             <CardContent className="p-4">
@@ -445,7 +515,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         <div className="absolute bottom-24 left-4 right-4 z-10">
           <div className="bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 rounded-lg px-4 py-2">
             <p className="text-blue-300 text-sm text-center">
-              {currentQuestionIndex === -1 ? "Please share how you're feeling today..." : "Please share your response..."}
+              {isGreetingPhase ? "Please share how you're feeling today..." : "Please share your response..."}
             </p>
           </div>
         </div>
