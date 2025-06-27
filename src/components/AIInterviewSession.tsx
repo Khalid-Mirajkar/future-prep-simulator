@@ -44,9 +44,11 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [isWaitingForAnswer, setIsWaitingForAnswer] = useState(false);
   const [currentSubtitle, setCurrentSubtitle] = useState('');
   const [showSubtitles, setShowSubtitles] = useState(true);
-  const [conversationState, setConversationState] = useState<'greeting' | 'question' | 'waiting' | 'transitioning'>('greeting');
+  const [conversationState, setConversationState] = useState<'greeting' | 'question' | 'waiting' | 'transitioning' | 'acknowledging'>('greeting');
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
+  const [speechEndTimer, setSpeechEndTimer] = useState<NodeJS.Timeout | null>(null);
   const [isGreetingPhase, setIsGreetingPhase] = useState(true);
+  const [lastTranscript, setLastTranscript] = useState('');
 
   const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
   const { 
@@ -95,19 +97,23 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   ];
 
-  // Clear inactivity timer
-  const clearInactivityTimer = () => {
+  // Clear all timers
+  const clearAllTimers = () => {
     if (inactivityTimer) {
       clearTimeout(inactivityTimer);
       setInactivityTimer(null);
+    }
+    if (speechEndTimer) {
+      clearTimeout(speechEndTimer);
+      setSpeechEndTimer(null);
     }
   };
 
   // Set inactivity timer
   const setInactivityTimeout = () => {
-    clearInactivityTimer();
+    clearAllTimers();
     const timer = setTimeout(() => {
-      if (isWaitingForAnswer) {
+      if (isWaitingForAnswer && conversationState === 'waiting') {
         handleInactivity();
       }
     }, 15000); // 15 seconds
@@ -115,13 +121,13 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const handleInactivity = async () => {
-    const promptText = "Still there? Feel free to answer when you're ready.";
+    const promptText = "Whenever you're ready, feel free to respond!";
     setCurrentSubtitle(promptText);
     await speakText(promptText);
     
     // Restart listening after prompt
     setTimeout(() => {
-      if (isWaitingForAnswer) {
+      if (isWaitingForAnswer && conversationState === 'waiting') {
         startListening();
         setInactivityTimeout();
       }
@@ -149,33 +155,31 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }, 2000);
   };
 
-  const handleGreetingResponse = async () => {
-    if (transcript.trim()) {
-      console.log('User responded to greeting:', transcript);
-      clearInactivityTimer();
-      setConversationState('transitioning');
-      setIsWaitingForAnswer(false);
-      stopListening();
-      
-      // Acknowledge response and move to first question
-      const acknowledgments = [
-        "Got it, thank you!",
-        "Great to hear that!",
-        "Thank you for sharing that with me."
-      ];
-      const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
-      const transitionText = `${acknowledgment} Now let's dive into our interview questions.`;
-      
-      setCurrentSubtitle(transitionText);
-      await speakText(transitionText);
-      
-      resetTranscript();
-      setIsGreetingPhase(false);
-      
-      setTimeout(() => {
-        askCurrentQuestion();
-      }, 2000);
-    }
+  const handleGreetingResponse = async (userResponse: string) => {
+    console.log('Processing greeting response:', userResponse);
+    clearAllTimers();
+    setConversationState('acknowledging');
+    setIsWaitingForAnswer(false);
+    stopListening();
+    
+    // Acknowledge response and move to first question
+    const acknowledgments = [
+      "Thank you for sharing.",
+      "Glad to hear that.",
+      "Thanks, let's begin!"
+    ];
+    const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+    
+    setCurrentSubtitle(acknowledgment);
+    await speakText(acknowledgment);
+    
+    resetTranscript();
+    setLastTranscript('');
+    setIsGreetingPhase(false);
+    
+    setTimeout(() => {
+      askCurrentQuestion();
+    }, 2000);
   };
 
   const askCurrentQuestion = async () => {
@@ -199,25 +203,23 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   };
 
-  const submitAnswer = async () => {
-    if (!transcript.trim()) return;
-
-    console.log('Submitting answer:', transcript);
-    clearInactivityTimer();
+  const submitAnswer = async (userAnswer: string) => {
+    console.log('Submitting answer:', userAnswer);
+    clearAllTimers();
     stopListening();
     setIsWaitingForAnswer(false);
-    setConversationState('transitioning');
+    setConversationState('acknowledging');
     
     const question = questions[currentQuestionIndex];
     const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
     
     // Evaluate the response
-    const evaluation = await evaluateResponse(question.question, transcript);
+    const evaluation = await evaluateResponse(question.question, userAnswer);
     
     const response: InterviewResponse = {
       questionId: question.id,
       question: question.question,
-      answer: transcript,
+      answer: userAnswer,
       score: evaluation.score,
       evaluation: evaluation.feedback,
       timeSpent
@@ -229,14 +231,14 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     const acknowledgments = [
       "Thank you for that detailed response.",
       "I appreciate your thoughtful answer.",
-      "That's a great perspective, thank you.",
-      "Thank you for sharing that with me."
+      "That's a great perspective, thank you."
     ];
     const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
     setCurrentSubtitle(acknowledgment);
     await speakText(acknowledgment);
     
     resetTranscript();
+    setLastTranscript('');
     
     // Move to next question or end interview
     if (currentQuestionIndex < questions.length - 1) {
@@ -260,7 +262,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const endInterview = async () => {
-    clearInactivityTimer();
+    clearAllTimers();
     const endingText = "Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!";
     setCurrentSubtitle(endingText);
     await speakText(endingText);
@@ -273,7 +275,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   };
 
   const handleEndCall = () => {
-    clearInactivityTimer();
+    clearAllTimers();
     stopCamera();
     stopListening();
     window.history.back();
@@ -286,34 +288,46 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     }
   };
 
-  // Enhanced conversation flow detection
+  // Enhanced speech detection with proper end-of-speech detection
   useEffect(() => {
     if (transcript && transcript.trim().length > 0) {
       console.log('Transcript updated:', transcript);
       
-      // Reset inactivity timer when user starts speaking
-      clearInactivityTimer();
+      // Clear any existing speech end timer
+      if (speechEndTimer) {
+        clearTimeout(speechEndTimer);
+        setSpeechEndTimer(null);
+      }
       
-      // Check if user has stopped speaking (transcript hasn't changed for 2 seconds)
-      const checkSpeechEnd = setTimeout(() => {
-        if (conversationState === 'waiting' && transcript.trim() && !isListening) {
-          console.log('Speech ended, processing response...');
+      // Set new timer to detect end of speech
+      const timer = setTimeout(() => {
+        console.log('Speech end detected, processing response...');
+        
+        if (conversationState === 'waiting' && transcript.trim() && transcript !== lastTranscript) {
+          setLastTranscript(transcript);
+          
           if (isGreetingPhase) {
-            handleGreetingResponse();
+            handleGreetingResponse(transcript);
           } else {
-            submitAnswer();
+            submitAnswer(transcript);
           }
         }
-      }, 2000);
-
-      return () => clearTimeout(checkSpeechEnd);
+      }, 1500); // 1.5 seconds of silence
+      
+      setSpeechEndTimer(timer);
+      
+      // Clear inactivity timer since user is speaking
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        setInactivityTimer(null);
+      }
     }
-  }, [transcript, conversationState, isListening, isGreetingPhase]);
+  }, [transcript, conversationState, isGreetingPhase, lastTranscript]);
 
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
-      clearInactivityTimer();
+      clearAllTimers();
     };
   }, []);
 
@@ -450,6 +464,17 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         </div>
       </div>
 
+      {/* Debug Status Indicator */}
+      <div className="absolute bottom-24 left-4 z-30">
+        <div className="bg-black/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-300">
+          {conversationState === 'greeting' && '🟢 AI Speaking...'}
+          {conversationState === 'question' && '🟢 AI Asking Question...'}
+          {conversationState === 'waiting' && '🟡 Listening for your response...'}
+          {conversationState === 'acknowledging' && '🔵 AI Acknowledging...'}
+          {conversationState === 'transitioning' && '🔄 Moving to next question...'}
+        </div>
+      </div>
+
       {/* Main Video Grid */}
       <div className="absolute inset-0 pt-16 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-2 p-2">
         {/* AI Interviewer */}
@@ -512,7 +537,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
       {/* Conversation Status */}
       {conversationState === 'waiting' && (
-        <div className="absolute bottom-24 left-4 right-4 z-10">
+        <div className="absolute bottom-32 left-4 right-4 z-10">
           <div className="bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 rounded-lg px-4 py-2">
             <p className="text-blue-300 text-sm text-center">
               {isGreetingPhase ? "Please share how you're feeling today..." : "Please share your response..."}
