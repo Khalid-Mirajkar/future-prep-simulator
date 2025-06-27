@@ -8,6 +8,7 @@ interface UseSpeechRecognitionReturn {
   startListening: () => void;
   stopListening: () => void;
   resetTranscript: () => void;
+  forceRestart: () => void;
 }
 
 export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
@@ -24,6 +25,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onstart = () => {
+        console.log('🎙️ Speech recognition started successfully');
+        setIsListening(true);
+      };
 
       recognitionRef.current.onresult = (event) => {
         let finalTranscript = '';
@@ -43,15 +49,20 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
       recognitionRef.current.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        toast({
-          variant: "destructive",
-          title: "Speech Recognition Error",
-          description: "Please check your microphone permissions and try again.",
-        });
         setIsListening(false);
+        
+        // Don't show toast for common errors that we can handle
+        if (event.error !== 'aborted' && event.error !== 'no-speech') {
+          toast({
+            variant: "destructive",
+            title: "Speech Recognition Error",
+            description: "Please check your microphone permissions and try again.",
+          });
+        }
       };
 
       recognitionRef.current.onend = () => {
+        console.log('🛑 Speech recognition ended');
         setIsListening(false);
       };
     }
@@ -65,18 +76,49 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
-      setTranscript('');
-      setIsListening(true);
-      recognitionRef.current.start();
+      try {
+        console.log('⏺️ Starting speech recognition...');
+        setTranscript('');
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('❌ Failed to start speech recognition:', error);
+        setIsListening(false);
+      }
     }
   }, [isListening]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
+      console.log('⏹️ Stopping speech recognition...');
       recognitionRef.current.stop();
-      setIsListening(false);
     }
   }, [isListening]);
+
+  const forceRestart = useCallback(() => {
+    if (recognitionRef.current) {
+      console.log('🔄 Force restarting speech recognition...');
+      
+      // Stop current recognition
+      try {
+        recognitionRef.current.abort();
+      } catch (error) {
+        console.log('Note: abort() failed, continuing with restart...');
+      }
+      
+      // Wait a moment then restart
+      setTimeout(() => {
+        try {
+          console.log('⏺️ Starting fresh speech recognition...');
+          setTranscript('');
+          setIsListening(false);
+          recognitionRef.current?.start();
+        } catch (error) {
+          console.error('❌ Failed to restart speech recognition:', error);
+          setIsListening(false);
+        }
+      }, 100);
+    }
+  }, []);
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
@@ -87,6 +129,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     transcript,
     startListening,
     stopListening,
-    resetTranscript
+    resetTranscript,
+    forceRestart
   };
 };

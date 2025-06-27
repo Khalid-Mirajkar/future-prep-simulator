@@ -67,7 +67,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     transcript, 
     startListening, 
     stopListening, 
-    resetTranscript 
+    resetTranscript,
+    forceRestart
   } = useSpeechRecognition();
 
   const questions: InterviewQuestion[] = [
@@ -122,26 +123,25 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setCurrentSubtitle('');
     setSpeechListenerActive(false);
     
-    // Force a brief delay to ensure speech recognition is fully stopped
-    setTimeout(() => {
-      console.log('✅ State cleaned, ready for next question');
-    }, 100);
+    console.log('✅ State cleaned, ready for next question');
   };
 
-  // Enhanced speech listener activation
+  // Enhanced speech listener activation with force restart
   const activateSpeechListener = () => {
     console.log('🎤 Activating speech listener...');
     cleanStateForNextQuestion();
     
     setTimeout(() => {
-      console.log('🔄 Starting fresh speech recognition...');
+      console.log('🔄 Starting fresh speech recognition with force restart...');
       resetTranscript();
       setLastTranscriptProcessed('');
       setIsWaitingForAnswer(true);
       setSpeechListenerActive(true);
-      startListening();
+      
+      // Force restart to ensure clean state
+      forceRestart();
       setInactivityTimeout();
-    }, 500); // Increased delay to ensure clean state
+    }, 800); // Increased delay to ensure clean state
   };
 
   // Set inactivity timer
@@ -167,7 +167,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         console.log('🔄 Restarting listening after inactivity prompt...');
         resetTranscript();
         setLastTranscriptProcessed('');
-        startListening();
+        forceRestart();
         setSpeechListenerActive(true);
         setInactivityTimeout();
       }
@@ -519,7 +519,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
 
       {/* Enhanced Debug Status Panel */}
       <div className="absolute bottom-24 left-4 z-30">
-        <div className="bg-black/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-300 min-w-64">
+        <div className="bg-black/90 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-300 min-w-80">
           <div className="flex flex-col space-y-1">
             <div>
               {conversationState === 'greeting' && '🟢 AI Speaking (Greeting)...'}
@@ -535,12 +535,12 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
               🎙️ Is Listening: {isListening ? '✅ YES' : '❌ NO'}
             </div>
             {transcript && (
-              <div className="text-blue-400 text-xs max-w-48 truncate">
+              <div className="text-blue-400 text-xs max-w-64 truncate">
                 Current: "{transcript}"
               </div>
             )}
             {lastTranscriptProcessed && (
-              <div className="text-gray-500 text-xs max-w-48 truncate">
+              <div className="text-gray-500 text-xs max-w-64 truncate">
                 Last: "{lastTranscriptProcessed}"
               </div>
             )}
