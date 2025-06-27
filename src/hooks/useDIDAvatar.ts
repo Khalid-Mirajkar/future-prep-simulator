@@ -27,12 +27,12 @@ export const useDIDAvatar = (): UseDIDAvatarReturn => {
       const didService = new DIDService();
       
       console.log('Creating D-ID talk...');
-      // Create the talk
+      // Create the talk with enhanced voice settings
       const talkResponse = await didService.createTalk({
         text,
         voice: {
           type: 'microsoft',
-          voice_id: 'en-US-JennyNeural'
+          voice_id: 'en-US-AriaNeural' // Premium neural voice for more natural sound
         }
       });
 
@@ -63,35 +63,83 @@ export const useDIDAvatar = (): UseDIDAvatarReturn => {
       toast({
         variant: "destructive",
         title: "Avatar Generation Failed",
-        description: `Failed to generate avatar video: ${errorMessage}. Using fallback audio.`,
+        description: `Failed to generate avatar video: ${errorMessage}. Using enhanced fallback audio.`,
       });
       
-      // Fallback to browser text-to-speech
-      console.log('Falling back to browser text-to-speech...');
+      // Enhanced fallback to browser text-to-speech
+      console.log('Falling back to enhanced browser text-to-speech...');
       try {
+        // Wait for voices to be loaded
+        await new Promise<void>((resolve) => {
+          const checkVoices = () => {
+            const voices = speechSynthesis.getVoices();
+            if (voices.length > 0) {
+              resolve();
+            } else {
+              setTimeout(checkVoices, 100);
+            }
+          };
+          checkVoices();
+        });
+
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 0.8;
+        
+        // Enhanced voice settings for fallback
+        utterance.rate = 0.95;
+        utterance.pitch = 1.1;
+        utterance.volume = 0.95;
+        
+        // Find premium voice for fallback
+        const voices = speechSynthesis.getVoices();
+        const premiumVoice = voices.find(voice => {
+          const name = voice.name.toLowerCase();
+          const isEnglish = voice.lang.startsWith('en');
+          const isPremium = name.includes('neural') || name.includes('premium') || 
+                           name.includes('zira') || name.includes('hazel') || 
+                           name.includes('aria') || name.includes('jenny');
+          return isEnglish && isPremium;
+        }) || voices.find(voice => 
+          voice.lang.startsWith('en') && voice.name.toLowerCase().includes('female')
+        );
+        
+        if (premiumVoice) {
+          utterance.voice = premiumVoice;
+          console.log('Using premium fallback voice:', premiumVoice.name);
+        }
+        
+        // Add natural pauses for better pacing
+        const enhancedText = text
+          .replace(/\./g, '. ')
+          .replace(/\?/g, '? ')
+          .replace(/!/g, '! ')
+          .replace(/,/g, ', ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        utterance.text = enhancedText;
         
         utterance.onstart = () => {
-          console.log('Text-to-speech started');
+          console.log('Enhanced fallback speech started');
           setIsPlaying(true);
         };
         
         utterance.onend = () => {
-          console.log('Text-to-speech finished');
+          console.log('Enhanced fallback speech finished');
           setIsPlaying(false);
         };
         
         utterance.onerror = (event) => {
-          console.error('Text-to-speech error:', event);
+          console.error('Enhanced fallback speech error:', event);
           setIsPlaying(false);
         };
         
-        speechSynthesis.speak(utterance);
+        speechSynthesis.cancel();
+        setTimeout(() => {
+          speechSynthesis.speak(utterance);
+        }, 150);
+        
       } catch (speechError) {
-        console.error('Text-to-speech fallback failed:', speechError);
+        console.error('Enhanced text-to-speech fallback failed:', speechError);
         setIsPlaying(false);
       }
     }
