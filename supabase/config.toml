@@ -4,3 +4,6 @@ project_id = "jdknamkvstwuihynclbr"
 [auth]
 # Enable the leaked password detection
 enable_leaked_password_detection = true
+
+[functions.dia-voice-generation]
+verify_jwt = false

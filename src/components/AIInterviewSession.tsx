@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDIDAvatar } from '@/hooks/useDIDAvatar';
+import { useDIAVoice } from '@/hooks/useDIAVoice';
 import { useUserCamera } from '@/hooks/useUserCamera';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import DIDAvatar from '@/components/DIDAvatar';
@@ -51,7 +52,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
   const [isProcessingResponse, setIsProcessingResponse] = useState(false);
   const [speechListenerActive, setSpeechListenerActive] = useState(false);
 
-  const { isGenerating, currentVideoUrl, speakText, isPlaying } = useDIDAvatar();
+  const { isGenerating: isDIDGenerating, currentVideoUrl, speakText: didSpeakText, isPlaying: isDIDPlaying } = useDIDAvatar();
+  const { isGenerating: isDIAGenerating, isPlaying: isDIAPlaying, currentSubtitle: diaSubtitle, speakText: diaSpeakText } = useDIAVoice();
   const { 
     videoRef, 
     isVideoEnabled, 
@@ -159,7 +161,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     console.log('⏰ Handling inactivity...');
     const promptText = "Still there? Feel free to answer when you're ready.";
     setCurrentSubtitle(promptText);
-    await speakText(promptText);
+    await diaSpeakText(promptText);
     
     // Restart listening after prompt with fresh state
     setTimeout(() => {
@@ -181,10 +183,10 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     setConversationState('greeting');
     setIsGreetingPhase(true);
     
-    // Initial greeting
+    // Initial greeting with DIA voice
     const greetingText = `Hi! I'm your AI Interviewer for the role of ${jobTitle} at ${companyName}. It's great to meet you. Before we begin, how are you feeling today?`;
     setCurrentSubtitle(greetingText);
-    await speakText(greetingText);
+    await diaSpeakText(greetingText);
     
     // Start listening for response after greeting
     setTimeout(() => {
@@ -216,7 +218,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
     
     setCurrentSubtitle(acknowledgment);
-    await speakText(acknowledgment);
+    await diaSpeakText(acknowledgment);
     
     setIsGreetingPhase(false);
     setIsProcessingResponse(false);
@@ -236,7 +238,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
       setConversationState('question');
       
       setCurrentSubtitle(question.question);
-      await speakText(question.question);
+      await diaSpeakText(question.question);
       
       // Start listening after question finishes with enhanced activation
       setTimeout(() => {
@@ -285,7 +287,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     ];
     const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
     setCurrentSubtitle(acknowledgment);
-    await speakText(acknowledgment);
+    await diaSpeakText(acknowledgment);
     
     setIsProcessingResponse(false);
     
@@ -315,7 +317,7 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
     cleanStateForNextQuestion();
     const endingText = "Thank you for your time today. Your interview responses are being evaluated. Best of luck with your application!";
     setCurrentSubtitle(endingText);
-    await speakText(endingText);
+    await diaSpeakText(endingText);
     
     const totalTime = Math.round((Date.now() - interviewStartTime) / 1000);
     setTimeout(() => {
@@ -413,8 +415,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
                 <div className="relative bg-gray-900 rounded-xl overflow-hidden aspect-video">
                   <DIDAvatar
                     videoUrl={currentVideoUrl}
-                    isGenerating={isGenerating}
-                    isPlaying={isPlaying}
+                    isGenerating={isDIDGenerating || isDIAGenerating}
+                    isPlaying={isDIDPlaying || isDIAPlaying}
                     onVideoEnd={handleVideoEnd}
                     fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
                   />
@@ -559,8 +561,8 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
         <div className="relative bg-gray-900 rounded-lg overflow-hidden">
           <DIDAvatar
             videoUrl={currentVideoUrl}
-            isGenerating={isGenerating}
-            isPlaying={isPlaying}
+            isGenerating={isDIDGenerating || isDIAGenerating}
+            isPlaying={isDIDPlaying || isDIAPlaying}
             onVideoEnd={handleVideoEnd}
             fallbackImageUrl="https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg"
           />
@@ -572,11 +574,11 @@ const AIInterviewSession: React.FC<AIInterviewSessionProps> = ({
           </div>
 
           {/* Subtitles */}
-          {showSubtitles && currentSubtitle && (
+          {showSubtitles && (currentSubtitle || diaSubtitle) && (
             <div className="absolute bottom-16 left-4 right-4">
               <div className="bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2">
                 <p className="text-white text-sm text-center leading-relaxed">
-                  {currentSubtitle}
+                  {diaSubtitle || currentSubtitle}
                 </p>
               </div>
             </div>
