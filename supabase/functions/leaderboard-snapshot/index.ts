@@ -44,6 +44,64 @@ interface LeaderRow {
   is_bot?: boolean;
 }
 
+// Mock bot data for realistic competition
+const generateBots = (): UserStats[] => {
+  const bots: UserStats[] = [];
+  
+  // Bronze bots (60-70% score, 8-12 mins, 3-5 interviews)
+  for (let i = 0; i < 15; i++) {
+    bots.push({
+      user_id: `bot_bronze_${i}`,
+      username_masked: `User#${Math.random().toString().slice(2, 6)}`,
+      average_score: 60 + Math.random() * 10,
+      average_time_secs: 480 + Math.random() * 240, // 8-12 mins
+      interviews_taken: 3 + Math.floor(Math.random() * 3),
+      streak_days: 0,
+      rank_score: 0,
+      last_interview_date: new Date().toISOString(),
+      is_bot: true
+    });
+  }
+  
+  // Silver bots (70-80% score, 6-9 mins, 5-8 interviews)
+  for (let i = 0; i < 12; i++) {
+    bots.push({
+      user_id: `bot_silver_${i}`,
+      username_masked: `User#${Math.random().toString().slice(2, 6)}`,
+      average_score: 70 + Math.random() * 10,
+      average_time_secs: 360 + Math.random() * 180, // 6-9 mins
+      interviews_taken: 5 + Math.floor(Math.random() * 4),
+      streak_days: 0,
+      rank_score: 0,
+      last_interview_date: new Date().toISOString(),
+      is_bot: true
+    });
+  }
+  
+  // Gold bots (80-90% score, 4-7 mins, 7-12 interviews)
+  for (let i = 0; i < 8; i++) {
+    bots.push({
+      user_id: `bot_gold_${i}`,
+      username_masked: `User#${Math.random().toString().slice(2, 6)}`,
+      average_score: 80 + Math.random() * 10,
+      average_time_secs: 240 + Math.random() * 180, // 4-7 mins
+      interviews_taken: 7 + Math.floor(Math.random() * 6),
+      streak_days: 0,
+      rank_score: 0,
+      last_interview_date: new Date().toISOString(),
+      is_bot: true
+    });
+  }
+  
+  // Calculate rank scores for bots
+  bots.forEach(bot => {
+    const timeFactor = Math.min(100, Math.max(0, (BASELINE_TIME_SECONDS / Math.max(bot.average_time_secs, 1)) * 100));
+    bot.rank_score = (bot.average_score * 0.6) + (bot.interviews_taken * 0.3) + (timeFactor * 0.1);
+  });
+  
+  return bots;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -70,10 +128,6 @@ serve(async (req) => {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (interviewsError) {
-      throw interviewsError;
-    }
-
     // Calculate user statistics
     const userStatsMap = new Map<string, UserStats>();
     const now = new Date();
@@ -93,7 +147,7 @@ serve(async (req) => {
           streak_days: 0,
           rank_score: 0,
           last_interview_date: interview.created_at,
-          is_bot: false // Will be determined by checking if user exists in profiles
+          is_bot: false
         });
       }
 
@@ -116,7 +170,7 @@ serve(async (req) => {
     
     const realUserIds = new Set(profiles?.map(p => p.id) || []);
 
-    // Calculate streaks and mark bots
+    // Calculate streaks and mark bots for real users
     for (const [userId, stats] of userStatsMap) {
       stats.is_bot = !realUserIds.has(userId);
       
@@ -130,12 +184,18 @@ serve(async (req) => {
       stats.rank_score = (stats.average_score * 0.6) + (stats.interviews_taken * 0.3) + (timeFactor * 0.1);
     }
 
+    // Add bots to the user stats
+    const bots = generateBots();
+    bots.forEach(bot => {
+      userStatsMap.set(bot.user_id, bot);
+    });
+
     // Filter active users (excluding bots from percentile calculations)
-    const activeUsers = Array.from(userStatsMap.values())
-      .filter(user => {
-        const lastInterviewDate = new Date(user.last_interview_date);
-        return lastInterviewDate >= activeThreshold;
-      });
+    const allUsers = Array.from(userStatsMap.values());
+    const activeUsers = allUsers.filter(user => {
+      const lastInterviewDate = new Date(user.last_interview_date);
+      return lastInterviewDate >= activeThreshold;
+    });
 
     const activeRealUsers = activeUsers.filter(user => !user.is_bot);
 
@@ -187,9 +247,9 @@ serve(async (req) => {
     silverUsers.sort((a, b) => b.rank_score - a.rank_score);
     bronzeUsers.sort((a, b) => b.rank_score - a.rank_score);
 
-    // Create leaderboard rows with badges
-    const createLeaderRows = (users: UserStats[], startRank: number = 1): LeaderRow[] => {
-      return users.map((user, index) => ({
+    // Create leaderboard rows with badges and ensure current user appears
+    const createLeaderRows = (users: UserStats[], startRank: number = 1, includeCurrentUser: boolean = false): LeaderRow[] => {
+      let rows = users.map((user, index) => ({
         rank: startRank + index,
         username_masked: user.username_masked,
         average_score: Math.round(user.average_score),
@@ -198,6 +258,28 @@ serve(async (req) => {
         badges: calculateBadges(user),
         is_bot: user.is_bot
       }));
+
+      // If current user should be included but isn't in the top rows, add them
+      if (includeCurrentUser && currentUserId) {
+        const currentUserInRows = rows.find(row => row.username_masked === `User#${currentUserId.slice(-4)}`);
+        if (!currentUserInRows) {
+          const currentUserStats = userStatsMap.get(currentUserId);
+          if (currentUserStats) {
+            const currentUserRank = activeUsers.findIndex(u => u.user_id === currentUserId) + 1;
+            rows.push({
+              rank: currentUserRank,
+              username_masked: currentUserStats.username_masked,
+              average_score: Math.round(currentUserStats.average_score),
+              average_time_secs: Math.round(currentUserStats.average_time_secs),
+              interviews_taken: currentUserStats.interviews_taken,
+              badges: calculateBadges(currentUserStats),
+              is_bot: false
+            });
+          }
+        }
+      }
+
+      return rows;
     };
 
     // Find current user stats
@@ -242,15 +324,15 @@ serve(async (req) => {
       leagues: {
         gold: {
           total: goldUsers.length,
-          top10: createLeaderRows(goldUsers.slice(0, 10), 1)
+          top10: createLeaderRows(goldUsers.slice(0, 10), 1, currentUser?.league === 'gold')
         },
         silver: {
           total: silverUsers.length,
-          top10: createLeaderRows(silverUsers.slice(0, 10), goldUsers.length + 1)
+          top10: createLeaderRows(silverUsers.slice(0, 10), goldUsers.length + 1, currentUser?.league === 'silver')
         },
         bronze: {
           total: bronzeUsers.length,
-          top10: createLeaderRows(bronzeUsers.slice(0, 10), goldUsers.length + silverUsers.length + 1)
+          top10: createLeaderRows(bronzeUsers.slice(0, 10), goldUsers.length + silverUsers.length + 1, currentUser?.league === 'bronze')
         }
       }
     };

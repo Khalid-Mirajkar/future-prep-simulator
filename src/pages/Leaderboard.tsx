@@ -89,29 +89,39 @@ const Leaderboard = () => {
     const fetchLeaderboardData = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
+        const session = await supabase.auth.getSession();
         const { data, error } = await supabase.functions.invoke('leaderboard-snapshot', {
           headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            Authorization: `Bearer ${session.data.session?.access_token}`,
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Leaderboard error:', error);
+          throw error;
+        }
         
         setLeaderboardData(data);
         
         // Set initial league tab to user's current league
-        if (data.currentUser) {
+        if (data?.currentUser?.league) {
           setSelectedLeague(data.currentUser.league);
+        } else {
+          setSelectedLeague('bronze'); // Default fallback
         }
       } catch (err) {
         console.error('Error fetching leaderboard:', err);
-        setError(err.message);
+        setError(err?.message || 'Failed to load leaderboard');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLeaderboardData();
+    if (user) {
+      fetchLeaderboardData();
+    }
   }, [user]);
 
   const leagues: League[] = [
@@ -216,19 +226,24 @@ const Leaderboard = () => {
                     
                     return (
                       <motion.tr
-                        key={`${leagueUser.rank}-${leagueUser.username_masked}`}
+                        key={`${leagueUser.rank}-${leagueUser.username_masked}-${index}`}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className={cn(
                           "border-white/5 hover:bg-white/5 transition-colors",
-                          isCurrentUser && "bg-primary/10 border-primary/20",
+                          isCurrentUser && "bg-primary/10 border-primary/20 ring-1 ring-primary/30",
                           leagueUser.is_bot && "opacity-75"
                         )}
                       >
                         <TableCell className="font-mono">
                           <div className="flex items-center gap-2">
                             #{leagueUser.rank}
+                            {isCurrentUser && (
+                              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary">
+                                You
+                              </Badge>
+                            )}
                             {leagueUser.rank <= 3 && (
                               <Trophy className={cn(
                                 "h-4 w-4",
