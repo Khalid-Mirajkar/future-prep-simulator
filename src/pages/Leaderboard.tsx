@@ -59,52 +59,23 @@ const Leaderboard = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('bronze');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [paginatedData, setPaginatedData] = useState<{ [key: string]: LeaderRow[] }>({});
-  const [leagueCounts, setLeagueCounts] = useState({ gold: 0, silver: 0, bronze: 0 });
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const fetchLeaderboardData = async (league?: string, page = 1) => {
+  const fetchLeaderboardData = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (league && league !== 'overview') {
-        params.append('league', league);
-        params.append('page', page.toString());
-        params.append('limit', '50');
-      }
       
-      const { data: leaderboardData, error } = await supabase.functions.invoke('leaderboard-snapshot', {
-        body: params.toString() ? { query: params.toString() } : {}
-      });
+      const { data: leaderboardData, error } = await supabase.functions.invoke('leaderboard-snapshot');
       
       if (error) {
         console.error('Error fetching leaderboard:', error);
         return;
       }
 
-      if (league && league !== 'overview') {
-        // Paginated league data
-        setPaginatedData(prev => ({
-          ...prev,
-          [league]: page === 1 ? leaderboardData.users : [...(prev[league] || []), ...leaderboardData.users]
-        }));
-        setLeagueCounts(prev => leaderboardData.leagueCounts ?? prev);
-        if (page === 1) {
-          setData({ ...leaderboardData, leagues: undefined });
-        }
-      } else {
-        // Overview data
-        setData(leaderboardData);
-        setLeagueCounts({
-          gold: leaderboardData.leagues?.gold?.total || 0,
-          silver: leaderboardData.leagues?.silver?.total || 0,
-          bronze: leaderboardData.leagues?.bronze?.total || 0
-        });
-      }
+      setData(leaderboardData);
       
       // Set active tab to user's current league on first load
-      if (leaderboardData?.currentUser?.league && !league) {
+      if (leaderboardData?.currentUser?.league) {
         setActiveTab(leaderboardData.currentUser.league);
       }
     } catch (error) {
@@ -120,17 +91,6 @@ const Leaderboard = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    setCurrentPage(1);
-    if (value !== 'overview') {
-      fetchLeaderboardData(value, 1);
-    }
-  };
-
-  const loadMoreUsers = () => {
-    if (activeTab !== 'overview') {
-      setCurrentPage(prev => prev + 1);
-      fetchLeaderboardData(activeTab, currentPage + 1);
-    }
   };
 
   const formatTime = (seconds: number) => {
@@ -180,79 +140,58 @@ const Leaderboard = () => {
     });
   };
 
-  const renderLeagueTable = (users: LeaderRow[], showPagination = false) => (
-    <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-16">Rank</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead className="text-center">Score</TableHead>
-            <TableHead className="text-center">Time</TableHead>
-            <TableHead className="text-center">Interviews</TableHead>
-            <TableHead className="text-center">Badges</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user, index) => (
-            <TableRow 
-              key={user.rank} 
-              className={`transition-colors ${
-                data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` 
-                  ? 'bg-primary/10 hover:bg-primary/20' 
-                  : 'hover:bg-muted/50'
-              }`}
-            >
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  {user.rank <= 3 && (
-                    <span className="text-lg">
-                      {user.rank === 1 ? '🥇' : user.rank === 2 ? '🥈' : '🥉'}
-                    </span>
-                  )}
-                  #{user.rank}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {user.username_masked}
-                  {data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` && (
-                    <Badge variant="secondary" className="text-xs">You</Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="text-center font-medium">{user.average_score}%</TableCell>
-              <TableCell className="text-center">{formatTime(user.average_time_secs)}</TableCell>
-              <TableCell className="text-center">{user.interviews_taken}</TableCell>
-              <TableCell className="text-center">
-                <div className="flex justify-center gap-1">
-                  {renderBadges(user.badges)}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      
-      {showPagination && data?.pagination?.hasMore && (
-        <div className="flex justify-center">
-          <Button 
-            onClick={loadMoreUsers} 
-            variant="outline" 
-            disabled={loading}
-            className="hover:bg-muted"
+  const renderLeagueTable = (users: LeaderRow[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-16">Rank</TableHead>
+          <TableHead>User</TableHead>
+          <TableHead className="text-center">Score</TableHead>
+          <TableHead className="text-center">Time</TableHead>
+          <TableHead className="text-center">Interviews</TableHead>
+          <TableHead className="text-center">Badges</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users.map((user, index) => (
+          <TableRow 
+            key={user.rank} 
+            className={`transition-colors ${
+              data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` 
+                ? 'bg-primary/10 hover:bg-primary/20' 
+                : 'hover:bg-muted/50'
+            }`}
           >
-            {loading ? 'Loading...' : 'Load More Users'}
-          </Button>
-        </div>
-      )}
-      
-      {showPagination && data?.pagination && (
-        <p className="text-center text-sm text-muted-foreground">
-          Showing {Math.min(50 * currentPage, data.pagination.total)} of {data.pagination.total} users
-        </p>
-      )}
-    </div>
+            <TableCell className="font-medium">
+              <div className="flex items-center gap-2">
+                {user.rank <= 3 && (
+                  <span className="text-lg">
+                    {user.rank === 1 ? '🥇' : user.rank === 2 ? '🥈' : '🥉'}
+                  </span>
+                )}
+                #{user.rank}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                {user.username_masked}
+                {data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` && (
+                  <Badge variant="secondary" className="text-xs">You</Badge>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-center font-medium">{user.average_score}%</TableCell>
+            <TableCell className="text-center">{formatTime(user.average_time_secs)}</TableCell>
+            <TableCell className="text-center">{user.interviews_taken}</TableCell>
+            <TableCell className="text-center">
+              <div className="flex justify-center gap-1">
+                {renderBadges(user.badges)}
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 
   const getLeagueIcon = (league: string) => {
@@ -353,15 +292,15 @@ const Leaderboard = () => {
             </TabsTrigger>
             <TabsTrigger value="gold" className="flex items-center gap-2">
               <Trophy className="w-4 h-4" />
-              Gold ({leagueCounts.gold})
+              Gold
             </TabsTrigger>
             <TabsTrigger value="silver" className="flex items-center gap-2">
               <Medal className="w-4 h-4" />
-              Silver ({leagueCounts.silver})
+              Silver
             </TabsTrigger>
             <TabsTrigger value="bronze" className="flex items-center gap-2">
               <Award className="w-4 h-4" />
-              Bronze ({leagueCounts.bronze})
+              Bronze
             </TabsTrigger>
           </TabsList>
 
@@ -426,7 +365,7 @@ const Leaderboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderLeagueTable(paginatedData.gold || [], true)}
+                {renderLeagueTable(data?.leagues?.gold?.users || [])}
               </CardContent>
             </Card>
           </TabsContent>
@@ -440,7 +379,7 @@ const Leaderboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderLeagueTable(paginatedData.silver || [], true)}
+                {renderLeagueTable(data?.leagues?.silver?.users || [])}
               </CardContent>
             </Card>
           </TabsContent>
@@ -454,7 +393,7 @@ const Leaderboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {renderLeagueTable(paginatedData.bronze || [], true)}
+                {renderLeagueTable(data?.leagues?.bronze?.users || [])}
               </CardContent>
             </Card>
           </TabsContent>

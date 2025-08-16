@@ -12,7 +12,7 @@ const ACTIVE_DAYS_THRESHOLD = 14;
 const GOLD_PERCENTAGE = 0.10; // Top 10%
 const SILVER_PERCENTAGE = 0.20; // Next 20%
 const BRONZE_PERCENTAGE = 0.70; // Bottom 70%
-const BOT_COUNT = 975; // Generate ~975 bots for realistic population
+const BOT_COUNT = 35; // 15 Bronze + 12 Silver + 8 Gold
 
 interface InterviewResult {
   id: string;
@@ -48,14 +48,13 @@ interface LeaderRow {
 const generateBots = (): UserStats[] => {
   const bots: UserStats[] = [];
   
-  // Bronze bots (~60% of total bots)
-  const bronzeBotCount = Math.floor(BOT_COUNT * 0.60);
-  for (let i = 0; i < bronzeBotCount; i++) {
+  // Bronze bots (15 bots)
+  for (let i = 0; i < 15; i++) {
     bots.push({
       user_id: `bot_bronze_${i}`,
       username_masked: `User#${Math.random().toString().slice(2, 6)}`,
       average_score: 45 + Math.random() * 25, // 45-70% range
-      average_time_secs: 480 + Math.random() * 240, // 8-12 mins
+      average_time_secs: 120 + Math.random() * 120, // 2-4 mins
       interviews_taken: 2 + Math.floor(Math.random() * 4), // 2-5 interviews
       streak_days: 0,
       rank_score: 0,
@@ -64,14 +63,13 @@ const generateBots = (): UserStats[] => {
     });
   }
   
-  // Silver bots (~30% of total bots)
-  const silverBotCount = Math.floor(BOT_COUNT * 0.30);
-  for (let i = 0; i < silverBotCount; i++) {
+  // Silver bots (12 bots)
+  for (let i = 0; i < 12; i++) {
     bots.push({
       user_id: `bot_silver_${i}`,
       username_masked: `User#${Math.random().toString().slice(2, 6)}`,
       average_score: 65 + Math.random() * 20, // 65-85% range
-      average_time_secs: 300 + Math.random() * 180, // 5-8 mins
+      average_time_secs: 80 + Math.random() * 80, // 1.3-2.7 mins
       interviews_taken: 4 + Math.floor(Math.random() * 6), // 4-9 interviews
       streak_days: 0,
       rank_score: 0,
@@ -80,14 +78,13 @@ const generateBots = (): UserStats[] => {
     });
   }
   
-  // Gold bots (~10% of total bots)
-  const goldBotCount = BOT_COUNT - bronzeBotCount - silverBotCount;
-  for (let i = 0; i < goldBotCount; i++) {
+  // Gold bots (8 bots)
+  for (let i = 0; i < 8; i++) {
     bots.push({
       user_id: `bot_gold_${i}`,
       username_masked: `User#${Math.random().toString().slice(2, 6)}`,
       average_score: 75 + Math.random() * 20, // 75-95% range
-      average_time_secs: 180 + Math.random() * 180, // 3-6 mins
+      average_time_secs: 40 + Math.random() * 60, // 40-100 seconds
       interviews_taken: 6 + Math.floor(Math.random() * 8), // 6-13 interviews
       streak_days: 0,
       rank_score: 0,
@@ -125,12 +122,9 @@ serve(async (req) => {
       currentUserId = user?.id;
     }
 
-    // Parse query parameters for pagination
+    // Parse query parameters  
     const url = new URL(req.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
     const league = url.searchParams.get('league') || 'all';
-    const offset = (page - 1) * limit;
 
     // Fetch all interview results
     const { data: interviews, error: interviewsError } = await supabase
@@ -257,29 +251,9 @@ serve(async (req) => {
     silverUsers.sort((a, b) => b.rank_score - a.rank_score);
     bronzeUsers.sort((a, b) => b.rank_score - a.rank_score);
 
-    // Helper function to get paginated results for a league
-    const getPaginatedLeague = (users: UserStats[], startRank: number = 1) => {
-      if (league !== 'all') {
-        // Filter to specific league if requested
-        const leagueUsers = users.slice(offset, offset + limit);
-        return {
-          users: leagueUsers.map((user, index) => ({
-            rank: startRank + offset + index,
-            username_masked: user.username_masked,
-            average_score: Math.round(user.average_score),
-            average_time_secs: Math.round(user.average_time_secs),
-            interviews_taken: user.interviews_taken,
-            badges: calculateBadges(user),
-            is_bot: user.is_bot
-          })),
-          total: users.length,
-          hasMore: offset + limit < users.length
-        };
-      }
-      
-      // Default view: top 15 + current user if not in top 15
-      const top15 = users.slice(0, 15);
-      let rows = top15.map((user, index) => ({
+    // Helper function to get league users without pagination
+    const getLeagueUsers = (users: UserStats[], startRank: number = 1) => {
+      return users.map((user, index) => ({
         rank: startRank + index,
         username_masked: user.username_masked,
         average_score: Math.round(user.average_score),
@@ -288,29 +262,6 @@ serve(async (req) => {
         badges: calculateBadges(user),
         is_bot: user.is_bot
       }));
-
-      // Add current user if not in top 15
-      if (currentUserId) {
-        const currentUserIndex = users.findIndex(u => u.user_id === currentUserId);
-        if (currentUserIndex >= 15) {
-          const currentUser = users[currentUserIndex];
-          rows.push({
-            rank: startRank + currentUserIndex,
-            username_masked: currentUser.username_masked,
-            average_score: Math.round(currentUser.average_score),
-            average_time_secs: Math.round(currentUser.average_time_secs),
-            interviews_taken: currentUser.interviews_taken,
-            badges: calculateBadges(currentUser),
-            is_bot: false
-          });
-        }
-      }
-
-      return {
-        users: rows,
-        total: users.length,
-        hasMore: false
-      };
     };
 
     // Find current user stats
@@ -355,56 +306,13 @@ serve(async (req) => {
       };
     }
 
-    // Return paginated results based on request
-    if (league !== 'all') {
-      let leagueUsers: UserStats[];
-      let startRank = 1;
-      
-      switch (league) {
-        case 'gold':
-          leagueUsers = goldUsers;
-          break;
-        case 'silver':
-          leagueUsers = silverUsers;
-          startRank = goldUsers.length + 1;
-          break;
-        case 'bronze':
-          leagueUsers = bronzeUsers;
-          startRank = goldUsers.length + silverUsers.length + 1;
-          break;
-        default:
-          leagueUsers = [...goldUsers, ...silverUsers, ...bronzeUsers];
-      }
-
-      const paginatedResults = getPaginatedLeague(leagueUsers, startRank);
-      
-      return new Response(JSON.stringify({
-        currentUser,
-        league: league,
-        users: paginatedResults.users,
-        pagination: {
-          page,
-          limit,
-          total: paginatedResults.total,
-          hasMore: paginatedResults.hasMore
-        },
-        leagueCounts: {
-          gold: goldUsers.length,
-          silver: silverUsers.length,
-          bronze: bronzeUsers.length
-        }
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Default overview response
+    // Return simple response without pagination
     const response = {
       currentUser,
       leagues: {
-        gold: getPaginatedLeague(goldUsers, 1),
-        silver: getPaginatedLeague(silverUsers, goldUsers.length + 1),
-        bronze: getPaginatedLeague(bronzeUsers, goldUsers.length + silverUsers.length + 1)
+        gold: { users: getLeagueUsers(goldUsers, 1) },
+        silver: { users: getLeagueUsers(silverUsers, goldUsers.length + 1) },
+        bronze: { users: getLeagueUsers(bronzeUsers, goldUsers.length + silverUsers.length + 1) }
       }
     };
 
