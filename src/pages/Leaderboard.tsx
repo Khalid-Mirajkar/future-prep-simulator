@@ -1,20 +1,15 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Crown, Medal, Flame, Clock, Target, TrendingUp, Eye, ChevronDown, Star, ArrowLeft, Search, MapPin } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
-
-// Constants for ranking calculations
-const BASELINE_TIME_SECONDS = 90;
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowLeft, Trophy, Medal, Award, Flame, Clock, Target, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import CustomLoader from '@/components/CustomLoader';
 
 interface LeaderRow {
   rank: number;
@@ -26,514 +21,444 @@ interface LeaderRow {
   is_bot?: boolean;
 }
 
-interface CurrentUser {
-  user_id: string;
-  league: 'bronze' | 'silver' | 'gold';
-  rank: number;
-  waitlist_position?: number;
-  average_score: number;
-  average_time_secs: number;
-  interviews_taken: number;
-  streak_days: number;
-  at_risk_until?: string;
-  next_league_hint: { type: 'interviews' | 'score'; value: number };
-}
-
 interface LeaderboardData {
-  currentUser: CurrentUser | null;
-  leagues: {
-    bronze: { total: number; top10: LeaderRow[] };
-    silver: { total: number; top10: LeaderRow[] };
-    gold: { total: number; top10: LeaderRow[] };
+  currentUser: {
+    user_id: string;
+    league: 'bronze' | 'silver' | 'gold';
+    rank: number;
+    waitlist_position?: number;
+    average_score: number;
+    average_time_secs: number;
+    interviews_taken: number;
+    streak_days: number;
+    percentile: number;
+    next_league_hint: { type: 'interviews' | 'score'; value: number };
+  } | null;
+  leagues?: {
+    [key: string]: {
+      users: LeaderRow[];
+      total: number;
+      hasMore: boolean;
+    };
+  };
+  users?: LeaderRow[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+  leagueCounts?: {
+    gold: number;
+    silver: number;
+    bronze: number;
   };
 }
-
-interface League {
-  name: string;
-  icon: React.ReactNode;
-  color: string;
-  bgGradient: string;
-  borderColor: string;
-  emoji: string;
-}
-
-const getBadgeIcon = (badge: string) => {
-  const iconMap: { [key: string]: React.ReactNode } = {
-    "fast_thinker": <Medal className="h-3 w-3 text-yellow-400" />,
-    "deep_thinker": <Target className="h-3 w-3 text-blue-400" />,
-    "consistency_champ": <TrendingUp className="h-3 w-3 text-green-400" />
-  };
-  return iconMap[badge] || <Star className="h-3 w-3" />;
-};
-
-const getBadgeTooltip = (badge: string) => {
-  const tooltipMap: { [key: string]: string } = {
-    "fast_thinker": "Fast Thinker (<30s average)",
-    "deep_thinker": "Deep Thinker (>60s average)",
-    "consistency_champ": "Consistency Champ (10+ interviews)"
-  };
-  return tooltipMap[badge] || badge;
-};
 
 const Leaderboard = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [selectedLeague, setSelectedLeague] = useState<string>("bronze");
-  const [showFullLeague, setShowFullLeague] = useState<{ [key: string]: boolean }>({});
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
+  const [data, setData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('bronze');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginatedData, setPaginatedData] = useState<{ [key: string]: LeaderRow[] }>({});
+  const [leagueCounts, setLeagueCounts] = useState({ gold: 0, silver: 0, bronze: 0 });
 
-  // Fetch leaderboard data
-  useEffect(() => {
-    const fetchLeaderboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const session = await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke('leaderboard-snapshot', {
-          headers: {
-            Authorization: `Bearer ${session.data.session?.access_token}`,
-          },
-        });
-
-        if (error) {
-          console.error('Leaderboard error:', error);
-          throw error;
-        }
-        
-        setLeaderboardData(data);
-        
-        // Set initial league tab to user's current league
-        if (data?.currentUser?.league) {
-          setSelectedLeague(data.currentUser.league);
-        } else {
-          setSelectedLeague('bronze'); // Default fallback
-        }
-      } catch (err) {
-        console.error('Error fetching leaderboard:', err);
-        setError(err?.message || 'Failed to load leaderboard');
-      } finally {
-        setLoading(false);
+  const fetchLeaderboardData = async (league?: string, page = 1) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (league && league !== 'overview') {
+        params.append('league', league);
+        params.append('page', page.toString());
+        params.append('limit', '50');
       }
+      
+      const { data: leaderboardData, error } = await supabase.functions.invoke('leaderboard-snapshot', {
+        body: params.toString() ? { query: params.toString() } : {}
+      });
+      
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        return;
+      }
+
+      if (league && league !== 'overview') {
+        // Paginated league data
+        setPaginatedData(prev => ({
+          ...prev,
+          [league]: page === 1 ? leaderboardData.users : [...(prev[league] || []), ...leaderboardData.users]
+        }));
+        setLeagueCounts(leaderboardData.leagueCounts);
+        if (page === 1) {
+          setData({ ...leaderboardData, leagues: undefined });
+        }
+      } else {
+        // Overview data
+        setData(leaderboardData);
+        setLeagueCounts({
+          gold: leaderboardData.leagues?.gold?.total || 0,
+          silver: leaderboardData.leagues?.silver?.total || 0,
+          bronze: leaderboardData.leagues?.bronze?.total || 0
+        });
+      }
+      
+      // Set active tab to user's current league on first load
+      if (leaderboardData?.currentUser?.league && !league) {
+        setActiveTab(leaderboardData.currentUser.league);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboardData();
+  }, []);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setCurrentPage(1);
+    if (value !== 'overview') {
+      fetchLeaderboardData(value, 1);
+    }
+  };
+
+  const loadMoreUsers = () => {
+    if (activeTab !== 'overview') {
+      setCurrentPage(prev => prev + 1);
+      fetchLeaderboardData(activeTab, currentPage + 1);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getUserPositionText = () => {
+    if (!data?.currentUser) return '';
+    const { rank, league, percentile } = data.currentUser;
+    
+    if (league === 'gold') {
+      return `You are #${rank} in Gold League — Top ${Math.round(10 - percentile)}% globally!`;
+    } else if (league === 'silver') {
+      return `You are #${rank} in Silver League — Top ${Math.round(30 - percentile)}% globally!`;
+    } else {
+      return `You are #${rank} in Bronze League — Keep practicing to reach Silver!`;
+    }
+  };
+
+  const renderBadges = (badges: string[]) => {
+    const badgeConfig = {
+      fast_thinker: { icon: '🏅', label: 'Fast Thinker', tooltip: 'Average response time under 30 seconds' },
+      deep_thinker: { icon: '💡', label: 'Deep Thinker', tooltip: 'Takes time to think through answers (60+ seconds)' },
+      consistency_champ: { icon: '📈', label: 'Consistency Champ', tooltip: 'Completed 10+ interviews' }
     };
 
-    if (user) {
-      fetchLeaderboardData();
-    }
-  }, [user]);
+    return badges.map((badge) => {
+      const config = badgeConfig[badge as keyof typeof badgeConfig];
+      if (!config) return null;
 
-  const leagues: League[] = [
-    {
-      name: "Gold League",
-      icon: <Crown className="h-5 w-5" />,
-      color: "text-yellow-400",
-      bgGradient: "from-yellow-500/20 to-amber-600/20",
-      borderColor: "border-yellow-500/30",
-      emoji: "🥇"
-    },
-    {
-      name: "Silver League",
-      icon: <Trophy className="h-5 w-5" />,
-      color: "text-gray-300",
-      bgGradient: "from-gray-400/20 to-slate-500/20",
-      borderColor: "border-gray-400/30",
-      emoji: "🥈"
-    },
-    {
-      name: "Bronze League",
-      icon: <Medal className="h-5 w-5" />,
-      color: "text-amber-600",
-      bgGradient: "from-amber-600/20 to-orange-700/20",
-      borderColor: "border-amber-600/30",
-      emoji: "🥉"
-    }
-  ];
-
-  const currentUser = leaderboardData?.currentUser;
-  const currentLeague = leagues.find(l => l.name.toLowerCase().includes(selectedLeague));
-
-  const getProgressMessage = () => {
-    if (!currentUser) return "";
-    
-    if (currentUser.league === "gold") {
-      return "🔥 Congrats, you made it to Gold League!";
-    } else if (currentUser.next_league_hint.type === 'interviews') {
-      return `${currentUser.next_league_hint.value} more interviews to reach ${currentUser.league === 'bronze' ? 'Silver' : 'Gold'}!`;
-    } else {
-      return `Improve average score by +${currentUser.next_league_hint.value}% to reach ${currentUser.league === 'bronze' ? 'Silver' : 'Gold'}`;
-    }
-  };
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}m ${secs}s`;
-  };
-
-  const toggleFullLeague = (leagueName: string) => {
-    setShowFullLeague(prev => ({
-      ...prev,
-      [leagueName]: !prev[leagueName]
-    }));
-  };
-
-  const renderLeagueTable = (leagueKey: string) => {
-    if (!leaderboardData) return null;
-    
-    const league = leagues.find(l => l.name.toLowerCase().includes(leagueKey));
-    const leagueData = leaderboardData.leagues[leagueKey as keyof typeof leaderboardData.leagues];
-    const displayUsers = showFullLeague[league?.name || ''] ? leagueData.top10 : leagueData.top10.slice(0, 10);
-    
-    if (!league) return null;
-
-    return (
-      <motion.div
-        key={league.name}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-4"
-      >
-        <Card className={cn("glass-card", league.borderColor, "border-2")}>
-          <CardHeader>
-            <CardTitle className={cn("flex items-center gap-3", league.color)}>
-              {league.icon}
-              <span className="text-gradient">{league.name}</span>
-              <Badge variant="secondary" className="ml-auto">
-                {leagueData.total} users
+      return (
+        <TooltipProvider key={badge}>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge variant="outline" className="text-xs">
+                {config.icon}
               </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-white/10">
-                    <TableHead className="text-muted-foreground">Rank</TableHead>
-                    <TableHead className="text-muted-foreground">User</TableHead>
-                    <TableHead className="text-muted-foreground">Avg Score</TableHead>
-                    <TableHead className="text-muted-foreground">Avg Time</TableHead>
-                    <TableHead className="text-muted-foreground">Interviews</TableHead>
-                    <TableHead className="text-muted-foreground">Streak</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayUsers.map((leagueUser, index) => {
-                    const isCurrentUser = currentUser?.user_id && 
-                      leagueUser.username_masked === `User#${currentUser.user_id.slice(-4)}`;
-                    
-                    return (
-                      <motion.tr
-                        key={`${leagueUser.rank}-${leagueUser.username_masked}-${index}`}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={cn(
-                          "border-white/5 hover:bg-white/5 transition-colors",
-                          isCurrentUser && "bg-primary/10 border-primary/20 ring-1 ring-primary/30",
-                          leagueUser.is_bot && "opacity-75"
-                        )}
-                      >
-                        <TableCell className="font-mono">
-                          <div className="flex items-center gap-2">
-                            #{leagueUser.rank}
-                            {isCurrentUser && (
-                              <Badge variant="secondary" className="text-xs bg-primary/20 text-primary">
-                                You
-                              </Badge>
-                            )}
-                            {leagueUser.rank <= 3 && (
-                              <Trophy className={cn(
-                                "h-4 w-4",
-                                leagueUser.rank === 1 ? "text-yellow-400" :
-                                leagueUser.rank === 2 ? "text-gray-300" : "text-amber-600"
-                              )} />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              isCurrentUser && "text-primary font-semibold",
-                              leagueUser.is_bot && "italic text-muted-foreground"
-                            )}>
-                              {leagueUser.username_masked}
-                            </span>
-                            <TooltipProvider>
-                              <div className="flex gap-1">
-                                {leagueUser.badges.map((badge, i) => (
-                                  <Tooltip key={i}>
-                                    <TooltipTrigger asChild>
-                                      <div className="cursor-help">
-                                        {getBadgeIcon(badge)}
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>{getBadgeTooltip(badge)}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                ))}
-                              </div>
-                            </TooltipProvider>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="bg-green-500/20 text-green-400">
-                            {leagueUser.average_score}%
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
-                            {formatTime(leagueUser.average_time_secs)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {leagueUser.interviews_taken}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Flame className="h-4 w-4 text-orange-400" />
-                            <span className="text-orange-400 font-semibold">
-                              {isCurrentUser ? (currentUser?.streak_days || 0) : '—'}
-                            </span>
-                          </div>
-                        </TableCell>
-                      </motion.tr>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            
-            {leagueData.total > 10 && (
-              <div className="mt-4 text-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => toggleFullLeague(league.name)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  {showFullLeague[league.name] ? "Show Top 10" : "View Full League"}
-                  <ChevronDown className={cn(
-                    "h-4 w-4 ml-2 transition-transform",
-                    showFullLeague[league.name] && "rotate-180"
-                  )} />
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{config.tooltip}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    });
   };
+
+  const renderLeagueTable = (users: LeaderRow[], showPagination = false) => (
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-16">Rank</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead className="text-center">Score</TableHead>
+            <TableHead className="text-center">Time</TableHead>
+            <TableHead className="text-center">Interviews</TableHead>
+            <TableHead className="text-center">Badges</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.map((user, index) => (
+            <TableRow 
+              key={user.rank} 
+              className={`transition-colors ${
+                data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` 
+                  ? 'bg-primary/10 hover:bg-primary/20' 
+                  : 'hover:bg-muted/50'
+              }`}
+            >
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  {user.rank <= 3 && (
+                    <span className="text-lg">
+                      {user.rank === 1 ? '🥇' : user.rank === 2 ? '🥈' : '🥉'}
+                    </span>
+                  )}
+                  #{user.rank}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  {user.username_masked}
+                  {data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` && (
+                    <Badge variant="secondary" className="text-xs">You</Badge>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="text-center font-medium">{user.average_score}%</TableCell>
+              <TableCell className="text-center">{formatTime(user.average_time_secs)}</TableCell>
+              <TableCell className="text-center">{user.interviews_taken}</TableCell>
+              <TableCell className="text-center">
+                <div className="flex justify-center gap-1">
+                  {renderBadges(user.badges)}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      
+      {showPagination && data?.pagination?.hasMore && (
+        <div className="flex justify-center">
+          <Button 
+            onClick={loadMoreUsers} 
+            variant="outline" 
+            disabled={loading}
+            className="hover:bg-muted"
+          >
+            {loading ? 'Loading...' : 'Load More Users'}
+          </Button>
+        </div>
+      )}
+      
+      {showPagination && data?.pagination && (
+        <p className="text-center text-sm text-muted-foreground">
+          Showing {Math.min(50 * currentPage, data.pagination.total)} of {data.pagination.total} users
+        </p>
+      )}
+    </div>
+  );
+
+  const getLeagueIcon = (league: string) => {
+    switch (league) {
+      case 'gold': return <Trophy className="w-5 h-5 text-yellow-400" />;
+      case 'silver': return <Medal className="w-5 h-5 text-gray-400" />;
+      case 'bronze': return <Award className="w-5 h-5 text-amber-600" />;
+      default: return null;
+    }
+  };
+
+  const getProgressValue = () => {
+    if (!data?.currentUser) return 0;
+    const { league, percentile } = data.currentUser;
+    
+    if (league === 'gold') return 100;
+    if (league === 'silver') return Math.max(70, 100 - percentile);
+    return Math.max(0, 70 - percentile);
+  };
+
+  if (loading && !data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20 flex items-center justify-center">
+        <CustomLoader />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] relative">
-      {/* Background with radial gradient matching landing page */}
-      <div 
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle at 50% 50%, #121318 0%, #0D0D0D 100%)"
-        }}
-      />
-      
-      {/* Back to Dashboard Button */}
-      <div className="relative z-10 p-6">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Back to Dashboard Button */}
+        <Button
+          onClick={() => navigate('/dashboard')}
+          variant="ghost"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
         >
-          <Button
-            onClick={() => navigate('/dashboard')}
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-300 group"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-            Back to Dashboard
-          </Button>
-        </motion.div>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
 
-        <div className="space-y-6">
-          {loading && (
-            <div className="space-y-4">
-              <Card className="glass-card">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
+        {/* User Stats Card */}
+        {data?.currentUser && (
+          <Card className="border-primary/20 bg-gradient-to-br from-card to-card/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                {getLeagueIcon(data.currentUser.league)}
+                <span className="text-gradient bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                  Your Performance
+                </span>
+                <Badge variant="outline" className="ml-auto">
+                  {data.currentUser.league.charAt(0).toUpperCase() + data.currentUser.league.slice(1)} League
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">#{data.currentUser.rank}</div>
+                  <div className="text-sm text-muted-foreground">Global Rank</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{data.currentUser.average_score}%</div>
+                  <div className="text-sm text-muted-foreground">Avg Score</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{formatTime(data.currentUser.average_time_secs)}</div>
+                  <div className="text-sm text-muted-foreground">Avg Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Flame className="w-5 h-5 text-orange-400" />
+                    <span className="text-2xl font-bold text-orange-400">{data.currentUser.streak_days}</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  <div className="text-sm text-muted-foreground">Day Streak</div>
+                </div>
+              </div>
 
-          {error && (
-            <Card className="glass-card border-red-500/30">
-              <CardContent className="p-6">
-                <p className="text-red-400">Error loading leaderboard: {error}</p>
-              </CardContent>
-            </Card>
-          )}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progress to next league</span>
+                  <span>{Math.round(getProgressValue())}%</span>
+                </div>
+                <Progress value={getProgressValue()} className="h-2" />
+                <p className="text-sm text-muted-foreground text-center">
+                  {getUserPositionText()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-          {/* User Position Card */}
-          {currentUser && !loading && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Card className="glass-card border-primary/30 border-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/20">
-                      <span className="text-2xl">
-                        {leagues.find(l => l.name.toLowerCase().includes(currentUser.league))?.emoji}
-                      </span>
-                    </div>
-                    <span className="text-gradient">Your Position</span>
-                    {currentUser.waitlist_position && (
-                      <Badge variant="outline" className="ml-auto">
-                        Waitlist #{currentUser.waitlist_position}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-2xl font-bold text-gradient">
-                        Rank #{currentUser.rank}
-                      </div>
-                      <div className="text-muted-foreground capitalize">
-                        {currentUser.league} League
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">
-                        {currentUser.average_score}% avg score
-                      </div>
-                      <div className="text-muted-foreground">
-                        {currentUser.interviews_taken} interviews completed
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-help">
-                            <Flame className="h-5 w-5 text-orange-400" />
-                            <span className="text-lg font-bold text-orange-400">
-                              {currentUser.streak_days}
-                            </span>
-                            <span className="text-sm text-muted-foreground">day streak</span>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Consecutive days with at least one completed interview</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  
-                  {currentUser.league !== 'gold' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress to {currentUser.league === 'bronze' ? 'Silver' : 'Gold'} League</span>
-                        <span>{getProgressMessage()}</span>
-                      </div>
-                      <Progress 
-                        value={currentUser.league === 'bronze' ? 33 : 66} 
-                        className="h-2"
-                        indicatorClassName="bg-gradient-to-r from-primary to-primary/80"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <p className="text-center font-medium text-primary">
-                      {getProgressMessage()}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="grid grid-cols-4 w-full max-w-lg mx-auto mb-8">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="gold" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              Gold ({leagueCounts.gold})
+            </TabsTrigger>
+            <TabsTrigger value="silver" className="flex items-center gap-2">
+              <Medal className="w-4 h-4" />
+              Silver ({leagueCounts.silver})
+            </TabsTrigger>
+            <TabsTrigger value="bronze" className="flex items-center gap-2">
+              <Award className="w-4 h-4" />
+              Bronze ({leagueCounts.bronze})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {data?.currentUser && (
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                <CardContent className="pt-6">
+                  <div className="text-center mb-4">
+                    <p className="text-lg font-medium text-primary">
+                      {getUserPositionText()}
                     </p>
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
-          )}
+            )}
+            
+            <div className="grid gap-6 md:grid-cols-3">
+              <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-yellow-800">
+                    <Trophy className="w-5 h-5" />
+                    Gold League (Top 10%)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {renderLeagueTable(data?.leagues?.gold?.users || [])}
+                </CardContent>
+              </Card>
 
-          {/* League Selection Tabs */}
-          {leaderboardData && !loading && (
-            <div className="flex gap-2 p-1 bg-muted/20 rounded-lg">
-              {leagues.map((league) => {
-                const leagueKey = league.name.toLowerCase().split(' ')[0];
-                const leagueData = leaderboardData.leagues[leagueKey as keyof typeof leaderboardData.leagues];
-                return (
-                  <button
-                    key={league.name}
-                    onClick={() => setSelectedLeague(leagueKey)}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all",
-                      selectedLeague === leagueKey
-                        ? `bg-gradient-to-r ${league.bgGradient} text-white border ${league.borderColor}`
-                        : "hover:bg-white/5 text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <span className="text-lg">{league.emoji}</span>
-                    <span className="font-medium">{league.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {leagueData.total}
-                    </Badge>
-                  </button>
-                );
-              })}
+              <Card className="border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-gray-700">
+                    <Medal className="w-5 h-5" />
+                    Silver League (Next 20%)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {renderLeagueTable(data?.leagues?.silver?.users || [])}
+                </CardContent>
+              </Card>
+
+              <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-800">
+                    <Award className="w-5 h-5" />
+                    Bronze League (Bottom 70%)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {renderLeagueTable(data?.leagues?.bronze?.users || [])}
+                </CardContent>
+              </Card>
             </div>
-          )}
+          </TabsContent>
 
-          {/* League Tables */}
-          {!loading && (
-            <AnimatePresence mode="wait">
-              {renderLeagueTable(selectedLeague)}
-            </AnimatePresence>
-          )}
+          <TabsContent value="gold" className="space-y-6">
+            <Card className="border-yellow-200 bg-gradient-to-br from-yellow-50 to-amber-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-800">
+                  <Trophy className="w-5 h-5" />
+                  Gold League - Top 10%
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderLeagueTable(paginatedData.gold || [], true)}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Ranking Formula Info */}
-          <Card className="glass-card border-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                <span className="text-gradient">Ranking Formula</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="font-semibold text-green-400">Average Score</div>
-                  <div className="text-muted-foreground">60% weight</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <div className="font-semibold text-blue-400">Interviews Taken</div>
-                  <div className="text-muted-foreground">30% weight</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                  <div className="font-semibold text-purple-400">Time Factor</div>
-                  <div className="text-muted-foreground">10% weight</div>
-                </div>
-              </div>
-              
-              <div className="mt-4 p-3 rounded-lg bg-muted/10 border border-muted/20">
-                <div className="text-center text-sm text-muted-foreground">
-                  <strong>Badge Legend:</strong> 🏅 Fast Thinker (&lt;30s) • 💡 Deep Thinker (&gt;60s) • 📈 Consistency Champ (10+ interviews)
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="silver" className="space-y-6">
+            <Card className="border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-gray-700">
+                  <Medal className="w-5 h-5" />
+                  Silver League - Next 20%
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderLeagueTable(paginatedData.silver || [], true)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="bronze" className="space-y-6">
+            <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-800">
+                  <Award className="w-5 h-5" />
+                  Bronze League - Bottom 70%
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderLeagueTable(paginatedData.bronze || [], true)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
