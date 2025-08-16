@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Crown, Medal, Flame, Clock, Target, TrendingUp, Eye, ChevronDown, Star, Home, Menu } from "lucide-react";
+import { Trophy, Crown, Medal, Flame, Clock, Target, TrendingUp, Eye, ChevronDown, Star, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -317,8 +317,35 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* User Position Card */}
+    <div className="min-h-screen bg-[#0D0D0D] relative">
+      {/* Background with radial gradient matching landing page */}
+      <div 
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle at 50% 50%, #121318 0%, #0D0D0D 100%)"
+        }}
+      />
+      
+      {/* Back to Dashboard Button */}
+      <div className="relative z-10 p-6">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6"
+        >
+          <Button
+            onClick={() => navigate('/dashboard')}
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-300 group"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
+            Back to Dashboard
+          </Button>
+        </motion.div>
+
+        <div className="space-y-6">
+          {/* User Position Card */}
       {userPosition && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -437,6 +464,8 @@ const Leaderboard = () => {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 };
