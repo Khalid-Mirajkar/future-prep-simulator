@@ -89,7 +89,7 @@ const Leaderboard = () => {
           ...prev,
           [league]: page === 1 ? leaderboardData.users : [...(prev[league] || []), ...leaderboardData.users]
         }));
-        setLeagueCounts(leaderboardData.leagueCounts);
+        setLeagueCounts(prev => leaderboardData.leagueCounts ?? prev);
         if (page === 1) {
           setData({ ...leaderboardData, leagues: undefined });
         }
