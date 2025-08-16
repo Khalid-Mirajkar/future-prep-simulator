@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Crown, Medal, Flame, Clock, Target, TrendingUp, Eye, ChevronDown, Star } from "lucide-react";
+import { Trophy, Crown, Medal, Flame, Clock, Target, TrendingUp, Eye, ChevronDown, Star, Home, Menu } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import PageHeader from "@/components/PageHeader";
 
 // Mock data for demonstration - In production, this would come from your database
 const mockLeaderboardData = [
@@ -61,6 +67,9 @@ const getBadgeIcon = (badge: string) => {
 const Leaderboard = () => {
   const { analytics } = useAnalytics();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<string>("gold");
   const [showFullLeague, setShowFullLeague] = useState<{ [key: string]: boolean }>({});
 
