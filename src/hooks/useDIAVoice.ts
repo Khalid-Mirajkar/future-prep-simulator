@@ -24,8 +24,8 @@ export const useDIAVoice = (): UseDIAVoiceReturn => {
       setIsPlaying(false);
       setCurrentSubtitle(text);
 
-      // Call our Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('dia-voice-generation', {
+      // Call our n8n webhook via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('n8n-voice-generation', {
         body: { text }
       });
 
