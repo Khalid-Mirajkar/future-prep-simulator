@@ -89,26 +89,101 @@ const StartPractice = () => {
     }
 
     // Send test details to webhook
+    const webhookPayload = {
+      user_id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      company: companyData?.name || values.companyName,
+      job_title: values.jobTitle,
+      difficulty: values.difficulty?.charAt(0).toUpperCase() + values.difficulty?.slice(1),
+      num_questions: parseInt(values.numberOfQuestions || "15"),
+    }
+
+    // Validate payload before sending
+    if (!webhookPayload.company || !webhookPayload.job_title || !webhookPayload.difficulty) {
+      console.error("Invalid payload - missing required fields:", webhookPayload)
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please ensure all required fields are filled out.",
+      })
+      return
+    }
+
+    console.log("Sending webhook payload:", webhookPayload)
+
     try {
-      await fetch("http://localhost:5678/webhook-test/generate-questions", {
+      const response = await fetch("http://localhost:5678/webhook-test/generate-questions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          user_id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          company: companyData?.name || values.companyName,
-          job_title: values.jobTitle,
-          difficulty: values.difficulty?.charAt(0).toUpperCase() + values.difficulty?.slice(1),
-          num_questions: parseInt(values.numberOfQuestions || "15"),
-        }),
+        body: JSON.stringify(webhookPayload),
       })
+
+      console.log("Webhook response status:", response.status)
+      console.log("Webhook response headers:", Object.fromEntries(response.headers.entries()))
+
+      // Handle different HTTP status codes
+      if (!response.ok) {
+        let errorMessage = "Unknown error occurred"
+        
+        if (response.status === 404) {
+          errorMessage = "Webhook endpoint not found. Please check if n8n is running on port 5678."
+        } else if (response.status === 500) {
+          errorMessage = "Server error occurred. Please check n8n workflow configuration."
+        } else if (response.status === 0 || response.status >= 400) {
+          errorMessage = `Request failed with status ${response.status}. Please check your network connection and n8n setup.`
+        }
+
+        console.error(`Webhook request failed with status ${response.status}:`, errorMessage)
+        
+        // Try to get response text for more details
+        try {
+          const responseText = await response.text()
+          console.error("Response body:", responseText)
+        } catch (e) {
+          console.error("Could not read response body:", e)
+        }
+
+        toast({
+          variant: "destructive",
+          title: "Webhook Error",
+          description: errorMessage,
+        })
+        return
+      }
+
+      // Try to parse response if it exists
+      let responseData = null
+      try {
+        const responseText = await response.text()
+        console.log("Webhook response body:", responseText)
+        
+        if (responseText) {
+          responseData = JSON.parse(responseText)
+          console.log("Parsed webhook response:", responseData)
+        }
+      } catch (e) {
+        console.log("Response is not JSON or empty, which is fine for webhook")
+      }
+
+      console.log("Webhook request successful!")
+      
     } catch (error) {
-      console.error("Error sending data to webhook:", error)
+      console.error("Network error or request failed:", error)
+      
+      let errorMessage = "Failed to send test details. Please try again."
+      
+      // Handle specific error types
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        errorMessage = "Cannot connect to n8n webhook. Please ensure n8n is running on localhost:5678 and the webhook is active."
+      } else if (error instanceof Error) {
+        errorMessage = `Connection failed: ${error.message}. Please check if n8n is running and accessible.`
+      }
+
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to send test details. Please try again.",
+        title: "Connection Error",
+        description: errorMessage,
       })
       return
     }
