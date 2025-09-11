@@ -35,11 +35,11 @@ const StartPractice = () => {
   const navigate = useNavigate()
   const { validateCompany, clearValidation, isValidating, validationError, companyData } = useCompanyValidation()
   const { toast } = useToast()
+  const [inputsSectionCompleted, setInputsSectionCompleted] = useState(false)
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      testType: "mcq",
       difficulty: "intermediate",
       numberOfQuestions: "15",
     },
@@ -49,11 +49,13 @@ const StartPractice = () => {
   const testType = useWatch({ control: form.control, name: "testType" })
   const companyName = useWatch({ control: form.control, name: "companyName" })
   const jobTitle = useWatch({ control: form.control, name: "jobTitle" })
+  const difficulty = useWatch({ control: form.control, name: "difficulty" })
+  const numberOfQuestions = useWatch({ control: form.control, name: "numberOfQuestions" })
 
   // Progressive reveal states
-  const showInputs = testType
-  const showSelectors = showInputs && companyName && companyName.length >= 2 && jobTitle && jobTitle.length >= 2 && companyData
-  const showStartButton = showSelectors && form.getValues("difficulty") && form.getValues("numberOfQuestions")
+  const showInputs = !!testType
+  const showSelectors = inputsSectionCompleted && companyData && companyName && companyName.length >= 2 && jobTitle && jobTitle.length >= 2
+  const showStartButton = showSelectors && difficulty && numberOfQuestions
 
   useEffect(() => {
     return () => {
@@ -98,12 +100,35 @@ const StartPractice = () => {
     }
   }
 
-  const handleBlur = async () => {
+  const handleCompanyBlur = async () => {
     const companyName = form.getValues("companyName");
     if (companyName && companyName.length >= 2) {
       await validateCompany(companyName);
     }
   };
+
+  const handleJobTitleBlur = () => {
+    const currentCompanyName = form.getValues("companyName");
+    const currentJobTitle = form.getValues("jobTitle");
+    
+    // Mark inputs section as completed when user blurs from job title
+    // and both fields are properly filled and company is validated
+    if (currentCompanyName && currentCompanyName.length >= 2 && 
+        currentJobTitle && currentJobTitle.length >= 2 && 
+        companyData) {
+      setInputsSectionCompleted(true);
+    }
+  };
+
+  // Reset inputs section completion when form values change
+  useEffect(() => {
+    if (companyName && jobTitle) {
+      // Reset if user goes back to edit
+      if (inputsSectionCompleted && (!companyName || companyName.length < 2 || !jobTitle || jobTitle.length < 2 || !companyData)) {
+        setInputsSectionCompleted(false);
+      }
+    }
+  }, [companyName, jobTitle, companyData, inputsSectionCompleted]);
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white py-20 relative">
@@ -170,7 +195,7 @@ const StartPractice = () => {
 
               {/* Company Name and Job Title - Revealed after test type selection */}
               {showInputs && (
-                <div className="animate-fade-in space-y-6">
+                <div className="animate-fade-in transition-all duration-300 space-y-6">
                   <FormField
                     control={form.control}
                     name="companyName"
@@ -182,11 +207,15 @@ const StartPractice = () => {
                             <Input 
                               placeholder="Enter company name" 
                               {...field}
-                              onBlur={handleBlur}
+                              onBlur={handleCompanyBlur}
                               onChange={(e) => {
                                 field.onChange(e);
                                 if (companyData) {
                                   clearValidation();
+                                }
+                                // Reset inputs section completion when user types
+                                if (inputsSectionCompleted) {
+                                  setInputsSectionCompleted(false);
                                 }
                               }}
                             />
@@ -230,7 +259,18 @@ const StartPractice = () => {
                       <FormItem>
                         <FormLabel>Job Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter job title" {...field} />
+                          <Input 
+                            placeholder="Enter job title" 
+                            {...field} 
+                            onBlur={handleJobTitleBlur}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Reset inputs section completion when user types
+                              if (inputsSectionCompleted) {
+                                setInputsSectionCompleted(false);
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -241,7 +281,7 @@ const StartPractice = () => {
 
               {/* Difficulty and Number of Questions - Revealed after inputs are filled */}
               {showSelectors && (
-                <div className="animate-fade-in space-y-6">
+                <div className="animate-fade-in transition-all duration-300 space-y-6">
                   <FormField
                     control={form.control}
                     name="difficulty"
@@ -328,7 +368,7 @@ const StartPractice = () => {
 
               {/* Start Test Button - Revealed after all selections are made */}
               {showStartButton && (
-                <div className="animate-fade-in">
+                <div className="animate-fade-in transition-all duration-300">
                   <Button type="submit" className="w-full">
                     {isValidating ? (
                       <>
