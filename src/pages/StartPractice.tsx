@@ -96,12 +96,11 @@ const StartPractice = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          companyName: companyData?.name || values.companyName,
-          jobTitle: values.jobTitle,
-          difficulty: values.difficulty,
-          numberOfQuestions: values.numberOfQuestions,
-          testType: values.testType,
-          companyLogo: companyData?.logo,
+          user_id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          company: companyData?.name || values.companyName,
+          job_title: values.jobTitle,
+          difficulty: values.difficulty?.charAt(0).toUpperCase() + values.difficulty?.slice(1),
+          num_questions: parseInt(values.numberOfQuestions || "15"),
         }),
       })
     } catch (error) {
