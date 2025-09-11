@@ -88,6 +88,32 @@ const StartPractice = () => {
       return
     }
 
+    // Send test details to webhook
+    try {
+      await fetch("http://localhost:5678/webhook-test/generate-questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          companyName: companyData?.name || values.companyName,
+          jobTitle: values.jobTitle,
+          difficulty: values.difficulty,
+          numberOfQuestions: values.numberOfQuestions,
+          testType: values.testType,
+          companyLogo: companyData?.logo,
+        }),
+      })
+    } catch (error) {
+      console.error("Error sending data to webhook:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send test details. Please try again.",
+      })
+      return
+    }
+
     if (values.testType === "mcq") {
       navigate("/mcq-test", { 
         state: { 
