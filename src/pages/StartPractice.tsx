@@ -189,7 +189,15 @@ const StartPractice = () => {
     }
 
     if (values.testType === "mcq") {
-      navigate("/mcq-test", { 
+      const companyName = encodeURIComponent(companyData?.name || values.companyName);
+      const jobTitle = encodeURIComponent(values.jobTitle);
+      const params = new URLSearchParams({
+        difficulty: values.difficulty || 'intermediate',
+        numberOfQuestions: values.numberOfQuestions || '15',
+        ...(companyData?.logo && { companyLogo: companyData.logo })
+      });
+      
+      navigate(`/mcq-test/${companyName}/${jobTitle}?${params.toString()}`, { 
         state: { 
           companyName: companyData?.name || values.companyName, 
           jobTitle: values.jobTitle,
@@ -199,7 +207,15 @@ const StartPractice = () => {
         } 
       })
     } else if (values.testType === "video") {
-      navigate("/ai-video-interview", { 
+      const companyName = encodeURIComponent(companyData?.name || values.companyName);
+      const jobTitle = encodeURIComponent(values.jobTitle);
+      const params = new URLSearchParams({
+        difficulty: values.difficulty || 'intermediate',
+        numberOfQuestions: values.numberOfQuestions || '15',
+        ...(companyData?.logo && { companyLogo: companyData.logo })
+      });
+      
+      navigate(`/ai-video-interview/${companyName}/${jobTitle}?${params.toString()}`, { 
         state: { 
           companyName: companyData?.name || values.companyName, 
           jobTitle: values.jobTitle,

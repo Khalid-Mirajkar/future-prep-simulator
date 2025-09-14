@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MCQQuestion, TestResult } from "@/types/mcq";
@@ -10,7 +10,16 @@ import { useQueryClient } from "@tanstack/react-query";
 export const useMCQTest = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { companyName, jobTitle, numberOfQuestions } = location.state || {};
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  
+  // Get data from URL params first, then fallback to location state
+  const companyName = params.companyName ? decodeURIComponent(params.companyName) : location.state?.companyName;
+  const jobTitle = params.jobTitle ? decodeURIComponent(params.jobTitle) : location.state?.jobTitle;
+  const numberOfQuestions = searchParams.get('numberOfQuestions') || location.state?.numberOfQuestions || '15';
+  const difficulty = searchParams.get('difficulty') || location.state?.difficulty || 'intermediate';
+  const companyLogo = searchParams.get('companyLogo') || location.state?.companyLogo;
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();

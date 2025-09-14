@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useMCQTest } from '@/hooks/useMCQTest';
 import MCQQuestionDisplay from '@/components/MCQQuestionDisplay';
 import MCQTestResults from '@/components/MCQTestResults';
@@ -22,9 +22,21 @@ interface LocationState {
 const MCQTest: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams();
   
   // Safely access location.state with proper typing
   const locationState = location.state as LocationState | undefined;
+  
+  // Get data from URL params if available, otherwise from location state
+  const companyName = params.companyName ? decodeURIComponent(params.companyName) : locationState?.companyName;
+  const jobTitle = params.jobTitle ? decodeURIComponent(params.jobTitle) : locationState?.jobTitle;
+  
+  // Redirect to start-practice if no essential data is available
+  useEffect(() => {
+    if (!companyName || !jobTitle) {
+      navigate('/start-practice', { replace: true });
+    }
+  }, [companyName, jobTitle, navigate]);
   
   const {
     questions,
@@ -47,6 +59,9 @@ const MCQTest: React.FC = () => {
     handleBackToHome,
   } = useMCQTest();
 
+  // Return null while redirecting to prevent flash of error content
+  if (!companyName || !jobTitle) return null;
+  
   if (isLoading) return <MCQTestLoading />;
   
   if (error) return <MCQTestError error={error} handleRetry={handleRetry} />;
@@ -114,8 +129,8 @@ const MCQTest: React.FC = () => {
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
-              <p className="text-gray-400 text-center">Company: {locationState?.companyName}</p>
-              <p className="text-gray-400 text-center">Position: {locationState?.jobTitle}</p>
+              <p className="text-gray-400 text-center">Company: {companyName}</p>
+              <p className="text-gray-400 text-center">Position: {jobTitle}</p>
             </div>
 
             <MCQQuestionDisplay
