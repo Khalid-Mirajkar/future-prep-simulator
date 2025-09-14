@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MCQQuestion, TestResult } from "@/types/mcq";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const useMCQTest = () => {
   const location = useLocation();
@@ -12,6 +13,7 @@ export const useMCQTest = () => {
   const { companyName, jobTitle, numberOfQuestions } = location.state || {};
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   
   const [questions, setQuestions] = useState<MCQQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -250,6 +252,8 @@ export const useMCQTest = () => {
         });
       } else {
         setResultSaved(true);
+        // Invalidate analytics cache to refresh dashboard immediately
+        queryClient.invalidateQueries({ queryKey: ['interview-results'] });
         toast({
           title: "Results saved",
           description: "Your test results have been saved to your history."

@@ -334,6 +334,37 @@ Focus on:
             return q;
           });
           
+          // Shuffle the options for each question using the seed to ensure consistent randomization
+          const seedNum = parseInt(seed) || Math.floor(Math.random() * 1000000);
+          questions = questions.map((q, questionIndex) => {
+            // Create a seeded random function for this specific question
+            const questionSeed = seedNum + questionIndex;
+            const seededRandom = (seed: number) => {
+              let x = Math.sin(seed) * 10000;
+              return x - Math.floor(x);
+            };
+            
+            // Store the correct answer option before shuffling
+            const correctOption = q.options[q.correctAnswer];
+            
+            // Shuffle the options array using Fisher-Yates shuffle with seeded random
+            const shuffledOptions = [...q.options];
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+              const randomValue = seededRandom(questionSeed + i);
+              const j = Math.floor(randomValue * (i + 1));
+              [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            
+            // Find the new index of the correct answer after shuffling
+            const newCorrectIndex = shuffledOptions.findIndex(option => option === correctOption);
+            
+            return {
+              ...q,
+              options: shuffledOptions,
+              correctAnswer: newCorrectIndex
+            };
+          });
+          
         } catch (error) {
           console.error('Error parsing questions:', error);
           console.error('Raw content:', content);

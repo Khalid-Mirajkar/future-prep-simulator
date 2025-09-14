@@ -140,7 +140,9 @@ export function useAnalytics() {
   const result = useQuery({
     queryKey: ['interview-results', user?.id],
     queryFn: fetchResults,
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5, // Consider data stale after 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   const analytics = result.data ? calculateAnalytics(result.data) : undefined;
