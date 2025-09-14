@@ -19,7 +19,7 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { companyName, jobTitle, seed } = await req.json()
+    const { companyName, jobTitle, seed, numberOfQuestions = "10" } = await req.json()
     
     // Validate inputs
     if (!companyName || !jobTitle) {
@@ -156,7 +156,8 @@ serve(async (req) => {
       }
 
       // Create an improved prompt based on job category that focuses on realistic interview questions
-      let promptBase = `Generate 10 multiple choice interview questions for a ${jobTitle} position at ${companyName}. 
+      const numQuestions = parseInt(numberOfQuestions) || 10;
+      let promptBase = `Generate ${numQuestions} multiple choice interview questions for a ${jobTitle} position at ${companyName}.
 
 QUESTION TYPES TO INCLUDE (distribute evenly):
 1. Behavioral questions (teamwork, communication, adaptability)

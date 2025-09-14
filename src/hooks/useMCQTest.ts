@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export const useMCQTest = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { companyName, jobTitle } = location.state || {};
+  const { companyName, jobTitle, numberOfQuestions } = location.state || {};
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -59,7 +59,8 @@ export const useMCQTest = () => {
           body: { 
             companyName, 
             jobTitle, 
-            seed: questionSeed
+            seed: questionSeed,
+            numberOfQuestions: numberOfQuestions || "10"
           }
         });
 

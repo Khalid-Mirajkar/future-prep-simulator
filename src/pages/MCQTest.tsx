@@ -16,6 +16,7 @@ interface LocationState {
   companyName: string;
   jobTitle: string;
   companyLogo?: string;
+  numberOfQuestions?: string;
 }
 
 const MCQTest: React.FC = () => {
