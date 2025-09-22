@@ -45,12 +45,14 @@ const LogoTesting = () => {
         blueGradient.addColorStop(0.5, '#3B82F6');
         blueGradient.addColorStop(1, '#60A5FA');
         
-        // Draw "Sapph" with silver gradient
+        // Draw "Sapph" with silver gradient and uniform spacing
+        ctx.letterSpacing = '-0.015em';
         ctx.fillStyle = silverGradient;
         ctx.fillText('Sapph', 50, 100);
         
-        // Draw "HIRE" with blue gradient and bold font
+        // Draw "HIRE" with blue gradient, bold font and uniform spacing
         ctx.font = 'bold 48px Inter, system-ui, sans-serif';
+        ctx.letterSpacing = '-0.015em';
         ctx.fillStyle = blueGradient;
         ctx.fillText('HIRE', 190, 100);
         
@@ -155,11 +157,10 @@ const LogoTesting = () => {
                   ref={logoRef}
                   className="inline-flex items-baseline font-sans select-none"
                   style={{ 
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    gap: '0.01em' // x + 2 units based on letter spacing (-0.01em + 0.02em)
+                    fontFamily: 'Inter, system-ui, sans-serif'
                   }}
                 >
-                  {/* Sapph - Metallic Silver with cohesive spacing */}
+                  {/* Sapph - Metallic Silver with uniform spacing */}
                   <span 
                     className="text-6xl font-normal"
                     style={{
@@ -167,13 +168,13 @@ const LogoTesting = () => {
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      letterSpacing: '-0.01em'
+                      letterSpacing: '-0.015em'
                     }}
                   >
                     Sapph
                   </span>
                   
-                  {/* HIRE - Sapphire Blue Gradient, clean typography */}
+                  {/* HIRE - Sapphire Blue Gradient with uniform spacing */}
                   <span 
                     className="text-6xl font-bold"
                     style={{
@@ -181,7 +182,7 @@ const LogoTesting = () => {
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      letterSpacing: '-0.02em'
+                      letterSpacing: '-0.015em'
                     }}
                   >
                     HIRE
@@ -224,9 +225,9 @@ const LogoTesting = () => {
               <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                 <h3 className="text-white font-semibold mb-3">Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
-                  <li>• <strong>"Sapph":</strong> Metallic silver gradient, elegant kerning (-0.01em)</li>
-                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, tight kerning (-0.02em)</li>
-                  <li>• <strong>Spacing:</strong> Cohesive brand name with measured gap (letter spacing + 2 units = 0.01em)</li>
+                  <li>• <strong>"Sapph":</strong> Metallic silver gradient, uniform kerning (-0.015em)</li>
+                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, uniform kerning (-0.015em)</li>
+                  <li>• <strong>Spacing:</strong> Single cohesive word with consistent letter spacing throughout</li>
                   <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
                   <li>• <strong>Format:</strong> Available in PNG (transparent), SVG, and PDF conversion</li>
