@@ -391,6 +391,14 @@ const Index = () => {
                 >
                   Terms
                 </motion.a>
+                <motion.button
+                  onClick={() => navigate('/logo-testing')}
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                  whileHover={{ y: -2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                >
+                  Logo Test
+                </motion.button>
               </motion.div>
             </div>
           </div>
