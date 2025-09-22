@@ -49,18 +49,16 @@ const LogoTesting = () => {
         // Set transparent background
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Draw circular sapphire base with gradient
+        // Draw circular sapphire base
         const centerX = 200;
         const centerY = 200;
         const radius = 180;
         
-        // Create sapphire gradient
+        // Create clean sapphire gradient
         const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-        gradient.addColorStop(0, '#4A90E2');
-        gradient.addColorStop(0.3, '#1E40AF');
-        gradient.addColorStop(0.6, '#1E3A8A');
-        gradient.addColorStop(0.8, '#1E1B4B');
-        gradient.addColorStop(1, '#0F0C29');
+        gradient.addColorStop(0, '#1e3a8a');
+        gradient.addColorStop(0.5, '#1e40af');
+        gradient.addColorStop(1, '#1e1b4b');
         
         // Draw main circle
         ctx.beginPath();
@@ -68,76 +66,59 @@ const LogoTesting = () => {
         ctx.fillStyle = gradient;
         ctx.fill();
         
-        // Add faceted effect with lighter highlights
-        const highlightGradient = ctx.createRadialGradient(centerX - 50, centerY - 50, 0, centerX, centerY, radius);
-        highlightGradient.addColorStop(0, 'rgba(135, 206, 250, 0.6)');
-        highlightGradient.addColorStop(0.4, 'rgba(59, 130, 246, 0.3)');
-        highlightGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-        
-        ctx.fillStyle = highlightGradient;
-        ctx.fill();
-        
-        // Add semi-transparent overlay circle
+        // Add semi-transparent overlay
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(30, 64, 175, 0.3)';
+        ctx.fillStyle = 'rgba(30, 58, 138, 0.7)';
         ctx.fill();
         
-        // Draw overlapping H letters
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 80px Inter, system-ui, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Add glow effect for H letters
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        
-        // First H (slightly offset)
+        // First H (behind) - geometric design
         ctx.save();
-        ctx.translate(centerX - 25, centerY);
-        ctx.rotate(-0.1);
+        ctx.translate(centerX - 12, centerY + 4);
         
-        // Draw H structure manually for better control
-        ctx.fillRect(-25, -40, 8, 80); // Left vertical
-        ctx.fillRect(17, -40, 8, 80);  // Right vertical
-        ctx.fillRect(-25, -4, 50, 8);  // Horizontal bar (tilted effect)
+        // Create gradient for first H
+        const hGradient1 = ctx.createLinearGradient(0, 0, 50, 80);
+        hGradient1.addColorStop(0, '#e0e7ff');
+        hGradient1.addColorStop(0.5, '#ffffff');
+        hGradient1.addColorStop(1, '#c7d2fe');
         
-        // Add arrow elements
-        ctx.beginPath();
-        ctx.moveTo(-17, -50);
-        ctx.lineTo(-17, -35);
-        ctx.lineTo(-25, -42);
-        ctx.moveTo(-17, -35);
-        ctx.lineTo(-9, -42);
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        ctx.fillStyle = hGradient1;
+        
+        // Left vertical bar
+        ctx.fillRect(-20, -35, 8, 70);
+        // Right vertical bar  
+        ctx.fillRect(12, -35, 8, 70);
+        // Horizontal bar (tilted)
+        ctx.save();
+        ctx.rotate(0.14); // 8 degrees
+        ctx.fillRect(-20, -3, 24, 6);
+        ctx.restore();
         
         ctx.restore();
         
-        // Second H (overlapping)
+        // Second H (front) - geometric design
         ctx.save();
-        ctx.translate(centerX + 25, centerY);
-        ctx.rotate(0.1);
+        ctx.translate(centerX + 16, centerY - 8);
         
-        // Draw H structure
-        ctx.fillRect(-25, -40, 8, 80); // Left vertical
-        ctx.fillRect(17, -40, 8, 80);  // Right vertical
-        ctx.fillRect(-25, -4, 50, 8);  // Horizontal bar
+        // Create gradient for second H
+        const hGradient2 = ctx.createLinearGradient(0, 0, 50, 80);
+        hGradient2.addColorStop(0, '#f8fafc');
+        hGradient2.addColorStop(0.5, '#ffffff');
+        hGradient2.addColorStop(1, '#e2e8f0');
         
-        // Add arrow elements
-        ctx.beginPath();
-        ctx.moveTo(25, -50);
-        ctx.lineTo(25, -35);
-        ctx.lineTo(17, -42);
-        ctx.moveTo(25, -35);
-        ctx.lineTo(33, -42);
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        ctx.fillStyle = hGradient2;
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+        ctx.shadowBlur = 8;
+        
+        // Left vertical bar
+        ctx.fillRect(-20, -35, 8, 70);
+        // Right vertical bar
+        ctx.fillRect(12, -35, 8, 70);
+        // Horizontal bar (tilted)
+        ctx.save();
+        ctx.rotate(0.14); // 8 degrees
+        ctx.fillRect(-20, -3, 24, 6);
+        ctx.restore();
         
         ctx.restore();
         
@@ -170,51 +151,40 @@ const LogoTesting = () => {
 <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <radialGradient id="sapphireGradient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#4A90E2"/>
-      <stop offset="30%" stop-color="#1E40AF"/>
-      <stop offset="60%" stop-color="#1E3A8A"/>
-      <stop offset="80%" stop-color="#1E1B4B"/>
-      <stop offset="100%" stop-color="#0F0C29"/>
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#1e40af"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
     </radialGradient>
-    <radialGradient id="highlightGradient" cx="35%" cy="35%" r="50%">
-      <stop offset="0%" stop-color="rgba(135, 206, 250, 0.6)"/>
-      <stop offset="40%" stop-color="rgba(59, 130, 246, 0.3)"/>
-      <stop offset="100%" stop-color="rgba(59, 130, 246, 0)"/>
-    </radialGradient>
-    <filter id="glowEffect">
-      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-      <feMerge> 
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="hGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e0e7ff"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#c7d2fe"/>
+    </linearGradient>
+    <linearGradient id="hGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
   </defs>
   
   <!-- Main sapphire circle -->
   <circle cx="200" cy="200" r="180" fill="url(#sapphireGradient)"/>
   
-  <!-- Highlight effect -->
-  <circle cx="200" cy="200" r="180" fill="url(#highlightGradient)"/>
-  
   <!-- Semi-transparent overlay -->
-  <circle cx="200" cy="200" r="180" fill="rgba(30, 64, 175, 0.3)"/>
+  <circle cx="200" cy="200" r="180" fill="rgba(30, 58, 138, 0.7)"/>
   
-  <!-- First H (rotated and positioned) -->
-  <g transform="translate(175, 200) rotate(-6)" filter="url(#glowEffect)">
-    <rect x="-25" y="-40" width="8" height="80" fill="white"/>
-    <rect x="17" y="-40" width="8" height="80" fill="white"/>
-    <rect x="-25" y="-4" width="50" height="8" fill="white"/>
-    <!-- Arrow elements -->
-    <path d="M -17 -50 L -17 -35 L -25 -42 M -17 -35 L -9 -42" stroke="white" stroke-width="3" fill="none"/>
+  <!-- First H (behind) - Clean geometric design -->
+  <g transform="translate(188, 204)">
+    <rect x="-20" y="-35" width="8" height="70" rx="4" fill="url(#hGradient1)"/>
+    <rect x="12" y="-35" width="8" height="70" rx="4" fill="url(#hGradient1)"/>
+    <rect x="-20" y="-3" width="24" height="6" rx="3" fill="url(#hGradient1)" transform="rotate(8)"/>
   </g>
   
-  <!-- Second H (rotated and positioned) -->
-  <g transform="translate(225, 200) rotate(6)" filter="url(#glowEffect)">
-    <rect x="-25" y="-40" width="8" height="80" fill="white"/>
-    <rect x="17" y="-40" width="8" height="80" fill="white"/>
-    <rect x="-25" y="-4" width="50" height="8" fill="white"/>
-    <!-- Arrow elements -->
-    <path d="M 25 -50 L 25 -35 L 17 -42 M 25 -35 L 33 -42" stroke="white" stroke-width="3" fill="none"/>
+  <!-- Second H (front, overlapping) - Clean geometric design -->
+  <g transform="translate(216, 192)" filter="drop-shadow(0 0 8px rgba(255,255,255,0.5))">
+    <rect x="-20" y="-35" width="8" height="70" rx="4" fill="url(#hGradient2)"/>
+    <rect x="12" y="-35" width="8" height="70" rx="4" fill="url(#hGradient2)"/>
+    <rect x="-20" y="-3" width="24" height="6" rx="3" fill="url(#hGradient2)" transform="rotate(8)"/>
   </g>
 </svg>`;
 
@@ -275,103 +245,79 @@ const LogoTesting = () => {
               <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-white/10 rounded-lg p-12 text-center">
                 <div 
                   ref={logoRef}
-                  className="inline-block relative"
-                  style={{
-                    width: '300px',
-                    height: '300px',
-                    borderRadius: '50%',
-                    background: `
-                      radial-gradient(circle at 50% 50%, 
-                        #4A90E2 0%, 
-                        #1E40AF 30%, 
-                        #1E3A8A 60%, 
-                        #1E1B4B 80%, 
-                        #0F0C29 100%
-                      ),
-                      radial-gradient(circle at 35% 35%, 
-                        rgba(135, 206, 250, 0.6) 0%, 
-                        rgba(59, 130, 246, 0.3) 40%, 
-                        rgba(59, 130, 246, 0) 100%
-                      )
-                    `,
-                    backgroundBlendMode: 'overlay',
-                    boxShadow: `
-                      0 0 30px rgba(30, 64, 175, 0.4),
-                      inset 0 0 100px rgba(135, 206, 250, 0.2),
-                      0 10px 50px rgba(30, 64, 175, 0.3)
-                    `,
-                    animation: 'pulse 3s ease-in-out infinite alternate, shimmer 6s ease-in-out infinite'
-                  }}
+                  className="relative w-80 h-80 mx-auto"
                 >
-                  {/* Semi-transparent overlay */}
+                  {/* Sapphire Base */}
                   <div 
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                      background: 'rgba(30, 64, 175, 0.3)',
-                      backdropFilter: 'blur(1px)'
+                    className="absolute inset-0 rounded-full bg-cover bg-center"
+                    style={{ 
+                      backgroundImage: `url(${sapphireBase})`,
+                      filter: 'brightness(0.9) contrast(1.1) saturate(1.2)'
                     }}
                   />
                   
-                  {/* Overlapping H Letters */}
+                  {/* Semi-transparent overlay - clean and simple */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-950/70 to-indigo-900/70" />
+                  
+                  {/* Overlapping H Letters Container */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    {/* First H */}
-                    <div 
-                      className="absolute text-white font-bold select-none"
-                      style={{
-                        fontSize: '80px',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        transform: 'translateX(-20px) rotate(-6deg)',
-                        textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.4)',
-                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.6))'
-                      }}
-                    >
-                      <div className="relative">
-                        H
-                        {/* Arrow elements for first H */}
-                        <div 
-                          className="absolute"
-                          style={{
-                            top: '-20px',
-                            left: '8px',
-                            width: '0',
-                            height: '0',
-                            borderLeft: '6px solid transparent',
-                            borderRight: '6px solid transparent',
-                            borderBottom: '12px solid white'
-                          }}
-                        />
-                      </div>
+                    {/* First H (Behind) - Clean geometric design */}
+                    <div className="absolute transform -translate-x-3 translate-y-1">
+                      <svg width="60" height="80" viewBox="0 0 60 80" className="drop-shadow-lg">
+                        {/* Left vertical bar */}
+                        <rect x="5" y="5" width="8" height="70" rx="4" 
+                              fill="url(#hGradient1)" />
+                        {/* Right vertical bar */}
+                        <rect x="37" y="5" width="8" height="70" rx="4" 
+                              fill="url(#hGradient1)" />
+                        {/* Horizontal crossbar - slightly tilted */}
+                        <rect x="13" y="35" width="24" height="6" rx="3" 
+                              fill="url(#hGradient1)" 
+                              transform="rotate(8 25 38)" />
+                        
+                        <defs>
+                          <linearGradient id="hGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#e0e7ff" />
+                            <stop offset="50%" stopColor="#ffffff" />
+                            <stop offset="100%" stopColor="#c7d2fe" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
                     </div>
                     
-                    {/* Second H */}
-                    <div 
-                      className="absolute text-white font-bold select-none"
-                      style={{
-                        fontSize: '80px',
-                        fontFamily: 'Inter, system-ui, sans-serif',
-                        transform: 'translateX(20px) rotate(6deg)',
-                        textShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.4)',
-                        filter: 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.6))'
-                      }}
-                    >
-                      <div className="relative">
-                        H
-                        {/* Arrow elements for second H */}
-                        <div 
-                          className="absolute"
-                          style={{
-                            top: '-20px',
-                            right: '8px',
-                            width: '0',
-                            height: '0',
-                            borderLeft: '6px solid transparent',
-                            borderRight: '6px solid transparent',
-                            borderBottom: '12px solid white'
-                          }}
-                        />
-                      </div>
+                    {/* Second H (Front, overlapping) - Clean geometric design */}
+                    <div className="absolute transform translate-x-4 -translate-y-2">
+                      <svg width="60" height="80" viewBox="0 0 60 80" className="drop-shadow-2xl">
+                        {/* Left vertical bar */}
+                        <rect x="5" y="5" width="8" height="70" rx="4" 
+                              fill="url(#hGradient2)" />
+                        {/* Right vertical bar */}
+                        <rect x="37" y="5" width="8" height="70" rx="4" 
+                              fill="url(#hGradient2)" />
+                        {/* Horizontal crossbar - slightly tilted */}
+                        <rect x="13" y="35" width="24" height="6" rx="3" 
+                              fill="url(#hGradient2)" 
+                              transform="rotate(8 25 38)" />
+                        
+                        <defs>
+                          <linearGradient id="hGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stopColor="#f8fafc" />
+                            <stop offset="50%" stopColor="#ffffff" />
+                            <stop offset="100%" stopColor="#e2e8f0" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
                     </div>
                   </div>
+                  
+                  {/* Subtle shimmer animation overlay */}
+                  <div 
+                    className="absolute inset-0 rounded-full opacity-20"
+                    style={{
+                      background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent)',
+                      animation: 'shimmer 6s ease-in-out infinite'
+                    }}
+                  />
                 </div>
               </div>
 
@@ -410,14 +356,14 @@ const LogoTesting = () => {
               <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                 <h3 className="text-white font-semibold mb-3">Premium Logo Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
-                  <li>• <strong>Base:</strong> Circular sapphire gemstone with radial gradient (300px diameter)</li>
-                  <li>• <strong>Colors:</strong> Deep sapphire blues (#4A90E2 → #0F0C29) with metallic highlights</li>
-                  <li>• <strong>Overlay:</strong> Semi-transparent blue layer (70% opacity) for depth</li>
-                  <li>• <strong>Letters:</strong> Two overlapping white H letters with subtle rotation (±6°)</li>
-                  <li>• <strong>Effects:</strong> White glow, drop shadows, premium metallic finish</li>
-                  <li>• <strong>Animations:</strong> Subtle pulse and shimmer effects for luxury feel</li>
-                  <li>• <strong>Arrows:</strong> Upward-pointing elements on each H for dynamic energy</li>
-                  <li>• <strong>Style:</strong> Luxury gemstone aesthetic inspired by high-end jewelry brands</li>
+                  <li>• <strong>Base:</strong> Circular sapphire gemstone background (320px diameter)</li>
+                  <li>• <strong>Colors:</strong> Deep sapphire blues with clean gradients and metallic highlights</li>
+                  <li>• <strong>Overlay:</strong> Semi-transparent blue layer (70% opacity) for premium depth</li>
+                  <li>• <strong>Letters:</strong> Two clean, geometric H letters with precise overlapping</li>
+                  <li>• <strong>Design:</strong> Professional geometric letterforms with tilted crossbars (+8°)</li>
+                  <li>• <strong>Effects:</strong> Subtle drop shadows and refined gradients for premium feel</li>
+                  <li>• <strong>Animations:</strong> Gentle shimmer effect for luxury aesthetic</li>
+                  <li>• <strong>Style:</strong> Clean, geometric design inspired by premium jewelry branding</li>
                   <li>• <strong>Format:</strong> Available in PNG (transparent), SVG, and PDF conversion</li>
                 </ul>
               </div>
