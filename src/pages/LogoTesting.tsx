@@ -156,7 +156,7 @@ const LogoTesting = () => {
                   className="inline-flex items-baseline font-sans select-none"
                   style={{ 
                     fontFamily: 'Inter, system-ui, sans-serif',
-                    gap: '0.1rem' // Tight spacing between parts
+                    gap: '0.01em' // x + 2 units based on letter spacing (-0.01em + 0.02em)
                   }}
                 >
                   {/* Sapph - Metallic Silver with cohesive spacing */}
@@ -226,7 +226,7 @@ const LogoTesting = () => {
                 <ul className="text-gray-300 text-sm space-y-2">
                   <li>• <strong>"Sapph":</strong> Metallic silver gradient, elegant kerning (-0.01em)</li>
                   <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, tight kerning (-0.02em)</li>
-                  <li>• <strong>Spacing:</strong> Cohesive brand name with minimal gap (0.1rem)</li>
+                  <li>• <strong>Spacing:</strong> Cohesive brand name with measured gap (letter spacing + 2 units = 0.01em)</li>
                   <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
                   <li>• <strong>Format:</strong> Available in PNG (transparent), SVG, and PDF conversion</li>
