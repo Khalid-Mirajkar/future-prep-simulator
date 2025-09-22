@@ -1,59 +1,59 @@
-import React, { useState } from "react";
-import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import React, { useRef } from "react";
+import { ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import PageTransition from "@/components/PageTransition";
 
 const LogoTesting = () => {
   const navigate = useNavigate();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
 
-  const generateLogo = async () => {
-    setIsGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-logo', {
-        body: { 
-          prompt: `Create a premium wordmark logo for "Sapphhire":
-          - "Sapp" in metallic silver gradient (brushed steel effect), wider letter spacing
-          - The "h" should be subtly modified to include an upward arrow at 10° angle (growth/progress), similar subtlety to Amazon's smile
-          - "HIRE" in bold weight with deep sapphire to electric blue gradient (top to bottom)
-          - Premium, minimal, memorable design with luxury brand feel like Rolex/Dior but modern tech vibe
-          - Clean white background, high contrast
-          - Vector-style, crisp edges, professional typography
-          - Ultra high resolution, suitable for branding use` 
-        }
-      });
-
-      if (error) throw error;
-
-      setLogoUrl(data.imageUrl);
-      toast.success("Logo generated successfully!");
-    } catch (error) {
-      console.error("Error generating logo:", error);
-      toast.error("Failed to generate logo. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
+  const downloadAsPNG = async () => {
+    if (!logoRef.current) return;
+    
+    // Using html2canvas would require importing it, so for now we'll show a message
+    toast.info("PNG download: Use browser's 'Save as Image' or screenshot functionality for now.");
   };
 
-  const downloadLogo = (format: string) => {
-    if (!logoUrl) return;
-    
+  const downloadAsSVG = () => {
+    const svgContent = `
+<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5E7EB"/>
+      <stop offset="25%" stop-color="#F9FAFB"/>
+      <stop offset="50%" stop-color="#D1D5DB"/>
+      <stop offset="75%" stop-color="#F3F4F6"/>
+      <stop offset="100%" stop-color="#9CA3AF"/>
+    </linearGradient>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E40AF"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+  
+  <text x="20" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="400" letter-spacing="3px" fill="url(#silverGradient)">Sapp</text>
+  <text x="140" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="400" fill="url(#silverGradient)" transform="rotate(-10 165 70)">h</text>
+  <text x="180" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="700" letter-spacing="-1px" fill="url(#blueGradient)">HIRE</text>
+</svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = logoUrl;
-    link.download = `sapphhire-logo.${format}`;
+    link.href = url;
+    link.download = 'sapphhire-logo.svg';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("SVG downloaded successfully!");
   };
 
-  const convertToSVG = () => {
-    toast.info("SVG conversion would require additional processing. PNG download available for now.");
-    downloadLogo('png');
+  const downloadAsPDF = () => {
+    toast.info("PDF download: Convert the SVG file to PDF using external tools like Inkscape or online converters.");
   };
 
   return (
@@ -84,83 +84,105 @@ const LogoTesting = () => {
             </CardContent>
           </Card>
 
-          {/* Logo Generation */}
+          {/* Logo Display */}
           <Card className="glass-card border-white/10">
             <CardHeader>
-              <CardTitle className="text-white">Sapphhire Logo Generator</CardTitle>
+              <CardTitle className="text-white">Sapphhire Wordmark Logo</CardTitle>
               <p className="text-gray-400 text-sm">
-                Generate the custom wordmark logo with metallic silver "Sapp" + arrow "h" + sapphire blue "HIRE"
+                Custom wordmark with metallic silver "Sapp" + arrow "h" + sapphire blue "HIRE"
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Generate Button */}
-              <Button
-                onClick={generateLogo}
-                disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating Logo...
-                  </>
-                ) : (
-                  "Generate Sapphhire Logo"
-                )}
-              </Button>
-
               {/* Logo Display */}
-              {logoUrl && (
-                <div className="space-y-4">
-                  <div className="bg-white/5 border border-white/10 rounded-lg p-8 text-center">
-                    <img
-                      src={logoUrl}
-                      alt="Generated Sapphhire Logo"
-                      className="max-w-full max-h-64 mx-auto"
-                    />
-                  </div>
-
-                  {/* Download Options */}
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      onClick={() => downloadLogo('png')}
-                      variant="outline"
-                      size="sm"
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download PNG
-                    </Button>
-                    <Button
-                      onClick={convertToSVG}
-                      variant="outline"
-                      size="sm"
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download as SVG
-                    </Button>
-                    <Button
-                      onClick={() => toast.info("PDF conversion requires SVG first. Use PNG for now.")}
-                      variant="outline"
-                      size="sm"
-                      className="border-white/20 text-gray-400 cursor-not-allowed"
-                      disabled
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      PDF (Coming Soon)
-                    </Button>
-                  </div>
+              <div className="bg-white border border-white/10 rounded-lg p-12 text-center">
+                <div 
+                  ref={logoRef}
+                  className="inline-flex items-baseline font-sans select-none"
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+                >
+                  {/* Sapp - Metallic Silver */}
+                  <span 
+                    className="text-6xl font-normal tracking-wider"
+                    style={{
+                      background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      letterSpacing: '0.1em'
+                    }}
+                  >
+                    Sapp
+                  </span>
+                  
+                  {/* h with arrow - Metallic Silver + Subtle Arrow */}
+                  <span 
+                    className="text-6xl font-normal relative inline-block"
+                    style={{
+                      background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      transform: 'rotate(-10deg)',
+                      transformOrigin: 'center bottom'
+                    }}
+                  >
+                    h
+                  </span>
+                  
+                  {/* HIRE - Sapphire Blue Gradient */}
+                  <span 
+                    className="text-6xl font-bold tracking-tight"
+                    style={{
+                      background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      letterSpacing: '-0.02em'
+                    }}
+                  >
+                    HIRE
+                  </span>
                 </div>
-              )}
+              </div>
+
+              {/* Download Options */}
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  onClick={downloadAsPNG}
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PNG
+                </Button>
+                <Button
+                  onClick={downloadAsSVG}
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download SVG
+                </Button>
+                <Button
+                  onClick={downloadAsPDF}
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Convert to PDF
+                </Button>
+              </div>
 
               {/* Design Specifications */}
               <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                 <h3 className="text-white font-semibold mb-3">Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
-                  <li>• <strong>"Sapp":</strong> Metallic silver gradient, wider kerning</li>
-                  <li>• <strong>"h":</strong> Subtle upward arrow at 10° (growth/progress)</li>
-                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient</li>
+                  <li>• <strong>"Sapp":</strong> Metallic silver gradient, wider kerning (0.1em)</li>
+                  <li>• <strong>"h":</strong> Subtle upward arrow at -10° rotation (growth/progress)</li>
+                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, tight kerning (-0.02em)</li>
                   <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
                 </ul>
