@@ -13,13 +13,70 @@ const LogoTesting = () => {
   const downloadAsPNG = async () => {
     if (!logoRef.current) return;
     
-    // Using html2canvas would require importing it, so for now we'll show a message
-    toast.info("PNG download: Use browser's 'Save as Image' or screenshot functionality for now.");
+    try {
+      // Create a canvas element to render the logo
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const scale = 2; // High DPI scaling
+      
+      canvas.width = 800 * scale;
+      canvas.height = 200 * scale;
+      
+      if (ctx) {
+        ctx.scale(scale, scale);
+        
+        // Set transparent background
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Set font and text properties
+        ctx.font = '48px Inter, system-ui, sans-serif';
+        ctx.textBaseline = 'middle';
+        
+        // Create gradients
+        const silverGradient = ctx.createLinearGradient(0, 0, 200, 0);
+        silverGradient.addColorStop(0, '#E5E7EB');
+        silverGradient.addColorStop(0.25, '#F9FAFB');
+        silverGradient.addColorStop(0.5, '#D1D5DB');
+        silverGradient.addColorStop(0.75, '#F3F4F6');
+        silverGradient.addColorStop(1, '#9CA3AF');
+        
+        const blueGradient = ctx.createLinearGradient(0, 0, 200, 0);
+        blueGradient.addColorStop(0, '#1E40AF');
+        blueGradient.addColorStop(0.5, '#3B82F6');
+        blueGradient.addColorStop(1, '#60A5FA');
+        
+        // Draw "Sapph" with silver gradient
+        ctx.fillStyle = silverGradient;
+        ctx.fillText('Sapph', 50, 100);
+        
+        // Draw "HIRE" with blue gradient and bold font
+        ctx.font = 'bold 48px Inter, system-ui, sans-serif';
+        ctx.fillStyle = blueGradient;
+        ctx.fillText('HIRE', 190, 100);
+        
+        // Download the canvas as PNG
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sapphhire-logo.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success("High-resolution PNG downloaded with transparent background!");
+          }
+        }, 'image/png');
+      }
+    } catch (error) {
+      toast.error("PNG download failed. Please use browser's 'Save as Image' option.");
+    }
   };
 
   const downloadAsSVG = () => {
     const svgContent = `
-<svg width="400" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+<svg width="600" height="150" viewBox="0 0 600 150" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="silverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#E5E7EB"/>
@@ -35,9 +92,8 @@ const LogoTesting = () => {
     </linearGradient>
   </defs>
   
-  <text x="20" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="400" letter-spacing="3px" fill="url(#silverGradient)">Sapp</text>
-  <text x="140" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="400" fill="url(#silverGradient)" transform="rotate(-10 165 70)">h</text>
-  <text x="180" y="70" font-family="Arial, sans-serif" font-size="48" font-weight="700" letter-spacing="-1px" fill="url(#blueGradient)">HIRE</text>
+  <text x="50" y="90" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="400" letter-spacing="-0.5px" fill="url(#silverGradient)">Sapph</text>
+  <text x="240" y="90" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="700" letter-spacing="-1.2px" fill="url(#blueGradient)">HIRE</text>
 </svg>`;
 
     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -98,9 +154,12 @@ const LogoTesting = () => {
                 <div 
                   ref={logoRef}
                   className="inline-flex items-baseline font-sans select-none"
-                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+                  style={{ 
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    gap: '0.1rem' // Tight spacing between parts
+                  }}
                 >
-                  {/* Sapp - Metallic Silver with cohesive spacing */}
+                  {/* Sapph - Metallic Silver with cohesive spacing */}
                   <span 
                     className="text-6xl font-normal"
                     style={{
@@ -111,20 +170,7 @@ const LogoTesting = () => {
                       letterSpacing: '-0.01em'
                     }}
                   >
-                    Sapp
-                  </span>
-                  
-                  {/* h - Metallic Silver, clean and simple */}
-                  <span 
-                    className="text-6xl font-normal"
-                    style={{
-                      background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text'
-                    }}
-                  >
-                    h
+                    Sapph
                   </span>
                   
                   {/* HIRE - Sapphire Blue Gradient, clean typography */}
@@ -178,12 +224,12 @@ const LogoTesting = () => {
               <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                 <h3 className="text-white font-semibold mb-3">Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
-                  <li>• <strong>"Sapp":</strong> Metallic silver gradient, cohesive tight kerning (-0.01em)</li>
-                  <li>• <strong>"h":</strong> Clean typography, metallic silver gradient</li>
+                  <li>• <strong>"Sapph":</strong> Metallic silver gradient, elegant kerning (-0.01em)</li>
                   <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, tight kerning (-0.02em)</li>
-                  <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel with clean typography</li>
+                  <li>• <strong>Spacing:</strong> Cohesive brand name with minimal gap (0.1rem)</li>
+                  <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
-                  <li>• <strong>Note:</strong> Arrow elements can be added separately as icons if desired</li>
+                  <li>• <strong>Format:</strong> Available in PNG (transparent), SVG, and PDF conversion</li>
                 </ul>
               </div>
             </CardContent>
