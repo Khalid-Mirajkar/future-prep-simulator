@@ -100,7 +100,7 @@ const LogoTesting = () => {
                   className="inline-flex items-baseline font-sans select-none"
                   style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 >
-                  {/* Sapp - Metallic Silver with tighter spacing */}
+                  {/* Sapp - Metallic Silver with cohesive spacing */}
                   <span 
                     className="text-6xl font-normal"
                     style={{
@@ -108,43 +108,28 @@ const LogoTesting = () => {
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      letterSpacing: '0.02em'
+                      letterSpacing: '-0.01em'
                     }}
                   >
                     Sapp
                   </span>
                   
-                  {/* h with arrow - Metallic Silver + Subtle Arrow + Rotation */}
+                  {/* h - Metallic Silver, clean and simple */}
                   <span 
-                    className="text-6xl font-normal relative inline-block"
+                    className="text-6xl font-normal"
                     style={{
                       background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                      transform: 'rotate(-10deg)',
-                      transformOrigin: 'center bottom'
+                      backgroundClip: 'text'
                     }}
                   >
                     h
-                    {/* Subtle upward arrow integrated into h stem */}
-                    <span 
-                      className="absolute"
-                      style={{
-                        top: '15px',
-                        right: '8px',
-                        fontSize: '16px',
-                        color: '#9CA3AF',
-                        transform: 'rotate(10deg)'
-                      }}
-                    >
-                      ↗
-                    </span>
                   </span>
                   
-                  {/* HIRE - Sapphire Blue Gradient with arrow on E */}
+                  {/* HIRE - Sapphire Blue Gradient, clean typography */}
                   <span 
-                    className="text-6xl font-bold tracking-tight relative"
+                    className="text-6xl font-bold"
                     style={{
                       background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
                       WebkitBackgroundClip: 'text',
@@ -153,22 +138,7 @@ const LogoTesting = () => {
                       letterSpacing: '-0.02em'
                     }}
                   >
-                    HIR
-                    <span className="relative inline-block">
-                      E
-                      {/* Subtle upward arrow on middle line of E */}
-                      <span 
-                        className="absolute"
-                        style={{
-                          top: '28px',
-                          right: '2px',
-                          fontSize: '14px',
-                          color: '#3B82F6'
-                        }}
-                      >
-                        ↗
-                      </span>
-                    </span>
+                    HIRE
                   </span>
                 </div>
               </div>
@@ -208,12 +178,12 @@ const LogoTesting = () => {
               <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                 <h3 className="text-white font-semibold mb-3">Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
-                  <li>• <strong>"Sapp":</strong> Metallic silver gradient, premium tight kerning (0.02em)</li>
-                  <li>• <strong>"h":</strong> Subtle upward arrow at -10° rotation with integrated arrow (growth/progress)</li>
+                  <li>• <strong>"Sapp":</strong> Metallic silver gradient, cohesive tight kerning (-0.01em)</li>
+                  <li>• <strong>"h":</strong> Clean typography, metallic silver gradient</li>
                   <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, tight kerning (-0.02em)</li>
-                  <li>• <strong>"E":</strong> Subtle upward arrow on middle horizontal line (progress indicator)</li>
-                  <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel with growth symbolism</li>
+                  <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel with clean typography</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
+                  <li>• <strong>Note:</strong> Arrow elements can be added separately as icons if desired</li>
                 </ul>
               </div>
             </CardContent>
