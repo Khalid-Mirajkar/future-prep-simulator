@@ -50,11 +50,22 @@ const LogoTesting = () => {
         ctx.fillStyle = silverGradient;
         ctx.fillText('Sapph', 50, 100);
         
-        // Draw "HIRE" with blue gradient, bold font and uniform spacing
+        // Draw "HIRE" with blue gradient, bold font, uniform spacing and glow effect
         ctx.font = 'bold 48px Inter, system-ui, sans-serif';
         ctx.letterSpacing = '-0.015em';
+        
+        // Add glow effect for HIRE
+        ctx.shadowColor = 'rgba(59, 130, 246, 0.4)';
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        
         ctx.fillStyle = blueGradient;
         ctx.fillText('HIRE', 190, 100);
+        
+        // Reset shadow for subsequent drawings
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
         
         // Download the canvas as PNG
         canvas.toBlob((blob) => {
@@ -92,10 +103,17 @@ const LogoTesting = () => {
       <stop offset="50%" stop-color="#3B82F6"/>
       <stop offset="100%" stop-color="#60A5FA"/>
     </linearGradient>
+    <filter id="glowEffect">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
   
   <text x="50" y="90" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="400" letter-spacing="-0.5px" fill="url(#silverGradient)">Sapph</text>
-  <text x="240" y="90" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="700" letter-spacing="-1.2px" fill="url(#blueGradient)">HIRE</text>
+  <text x="240" y="90" font-family="Inter, Arial, sans-serif" font-size="60" font-weight="700" letter-spacing="-1.2px" fill="url(#blueGradient)" filter="url(#glowEffect)">HIRE</text>
 </svg>`;
 
     const blob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -174,7 +192,7 @@ const LogoTesting = () => {
                     Sapph
                   </span>
                   
-                  {/* HIRE - Sapphire Blue Gradient with uniform spacing */}
+                  {/* HIRE - Sapphire Blue Gradient with electric glow effect */}
                   <span 
                     className="text-6xl font-bold"
                     style={{
@@ -182,7 +200,9 @@ const LogoTesting = () => {
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      letterSpacing: '-0.015em'
+                      letterSpacing: '-0.015em',
+                      textShadow: '0 0 20px rgba(59, 130, 246, 0.3)',
+                      filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.4))'
                     }}
                   >
                     HIRE
@@ -226,7 +246,7 @@ const LogoTesting = () => {
                 <h3 className="text-white font-semibold mb-3">Design Specifications</h3>
                 <ul className="text-gray-300 text-sm space-y-2">
                   <li>• <strong>"Sapph":</strong> Metallic silver gradient, uniform kerning (-0.015em)</li>
-                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient, uniform kerning (-0.015em)</li>
+                  <li>• <strong>"HIRE":</strong> Bold weight, sapphire-to-electric-blue gradient with electric glow effect, uniform kerning (-0.015em)</li>
                   <li>• <strong>Spacing:</strong> Single cohesive word with consistent letter spacing throughout</li>
                   <li>• <strong>Style:</strong> Premium, minimal, luxury brand feel</li>
                   <li>• <strong>Inspiration:</strong> Rolex/Dior elegance + modern tech vibe</li>
