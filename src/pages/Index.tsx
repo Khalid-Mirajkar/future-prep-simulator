@@ -105,11 +105,50 @@ const Index = () => {
           <div className="container mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
               <motion.div 
-                className="text-xl font-bold text-white"
+                className="inline-flex items-baseline font-sans select-none"
+                style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
-                AI INTERVIEW
+                {/* Sapph - Metallic Silver with slide-in animation */}
+                <motion.span 
+                  className="text-2xl font-normal"
+                  style={{
+                    background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    letterSpacing: '-0.015em'
+                  }}
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                >
+                  Sapph
+                </motion.span>
+                
+                {/* HIRE - Sapphire Blue Gradient with electric glow */}
+                <motion.span 
+                  className="text-2xl font-bold"
+                  style={{
+                    background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    letterSpacing: '-0.015em',
+                    textShadow: '0 0 20px rgba(59, 130, 246, 0.3)',
+                    filter: 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.4))'
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
+                  whileHover={{ 
+                    textShadow: '0 0 30px rgba(59, 130, 246, 0.6)',
+                    filter: 'drop-shadow(0 0 12px rgba(59, 130, 246, 0.6))'
+                  }}
+                >
+                  HIRE
+                </motion.span>
               </motion.div>
               <motion.nav
                 initial={{ opacity: 0 }}
@@ -349,7 +388,38 @@ const Index = () => {
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <div className="text-xl font-bold text-white">AI INTERVIEW</div>
+                <div 
+                  className="inline-flex items-baseline font-sans select-none"
+                  style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+                >
+                  {/* Sapph - Metallic Silver */}
+                  <span 
+                    className="text-xl font-normal"
+                    style={{
+                      background: 'linear-gradient(135deg, #E5E7EB 0%, #F9FAFB 25%, #D1D5DB 50%, #F3F4F6 75%, #9CA3AF 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      letterSpacing: '-0.015em'
+                    }}
+                  >
+                    Sapph
+                  </span>
+                  
+                  {/* HIRE - Sapphire Blue Gradient */}
+                  <span 
+                    className="text-xl font-bold"
+                    style={{
+                      background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 50%, #60A5FA 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      letterSpacing: '-0.015em'
+                    }}
+                  >
+                    HIRE
+                  </span>
+                </div>
                 <p className="text-gray-400 text-sm mt-2">Elevate your interview skills</p>
               </motion.div>
               <motion.div 
