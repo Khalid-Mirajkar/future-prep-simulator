@@ -334,10 +334,10 @@ const StartPractice = () => {
                         </FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0">
                           <FormControl>
-                            <RadioGroupItem value="video" />
+                            <RadioGroupItem value="video" disabled />
                           </FormControl>
-                          <FormLabel className="font-normal">
-                            Humanize AI Recruiter Video Call Test
+                          <FormLabel className="font-normal text-gray-500">
+                            Humanize AI Recruiter Video Call (Coming Soon)
                           </FormLabel>
                         </FormItem>
                       </RadioGroup>
