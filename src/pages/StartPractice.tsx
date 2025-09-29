@@ -20,6 +20,9 @@ import { useCompanyValidation } from "@/hooks/useCompanyValidation"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import { supabase } from "@/integrations/supabase/client"
+import { useAuth } from "@/contexts/AuthContext"
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -35,7 +38,10 @@ const StartPractice = () => {
   const navigate = useNavigate()
   const { validateCompany, clearValidation, isValidating, validationError, companyData } = useCompanyValidation()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false)
+  const [waitlistLoading, setWaitlistLoading] = useState(false)
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,6 +81,92 @@ const StartPractice = () => {
       clearValidation();
     };
   }, []);
+
+  // Check if user is already on waitlist
+  useEffect(() => {
+    const checkWaitlistStatus = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('video_interview_waitlist')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setIsOnWaitlist(true);
+      }
+    };
+    
+    checkWaitlistStatus();
+  }, [user]);
+
+  const handleWaitlistCheckbox = async (checked: boolean) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please sign in to join the waitlist.",
+      });
+      return;
+    }
+
+    setWaitlistLoading(true);
+
+    try {
+      if (checked) {
+        // Add to waitlist
+        const { error } = await supabase
+          .from('video_interview_waitlist')
+          .insert({
+            user_id: user.id,
+            email: user.email || '',
+          });
+
+        if (error) {
+          // Check if user is already on waitlist
+          if (error.code === '23505') {
+            setIsOnWaitlist(true);
+            toast({
+              title: "Already on waitlist",
+              description: "You're already signed up for updates!",
+            });
+          } else {
+            throw error;
+          }
+        } else {
+          setIsOnWaitlist(true);
+          toast({
+            title: "Success!",
+            description: "You've been added to the waitlist. We'll notify you when this feature is ready!",
+          });
+        }
+      } else {
+        // Remove from waitlist
+        const { error } = await supabase
+          .from('video_interview_waitlist')
+          .delete()
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        setIsOnWaitlist(false);
+        toast({
+          title: "Removed from waitlist",
+          description: "You've been removed from the waitlist.",
+        });
+      }
+    } catch (error) {
+      console.error('Waitlist error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update waitlist status. Please try again.",
+      });
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const isValid = await validateCompany(values.companyName)
@@ -340,6 +432,20 @@ const StartPractice = () => {
                             Humanize AI Recruiter Video Call (Coming Soon)
                           </FormLabel>
                         </FormItem>
+                        <div className="ml-8 mt-2 flex items-center space-x-2">
+                          <Checkbox 
+                            id="waitlist" 
+                            checked={isOnWaitlist}
+                            onCheckedChange={handleWaitlistCheckbox}
+                            disabled={waitlistLoading}
+                          />
+                          <label
+                            htmlFor="waitlist"
+                            className="text-sm font-normal text-gray-400 cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Yes! Send me insider tips & success stories
+                          </label>
+                        </div>
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
