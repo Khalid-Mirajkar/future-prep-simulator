@@ -203,7 +203,7 @@ const StartPractice = () => {
     console.log("Sending webhook payload:", webhookPayload)
 
     try {
-      const response = await fetch("http://localhost:5678/webhook-test/generate-questions", {
+      const response = await fetch("https://n8n-production-3583.up.railway.app/webhook/generate-questions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
