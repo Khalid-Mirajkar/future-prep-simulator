@@ -23,6 +23,16 @@ import { useToast } from "@/components/ui/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const formSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
@@ -42,6 +52,7 @@ const StartPractice = () => {
   const [currentStep, setCurrentStep] = useState(1)
   const [isOnWaitlist, setIsOnWaitlist] = useState(false)
   const [waitlistLoading, setWaitlistLoading] = useState(false)
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -169,6 +180,12 @@ const StartPractice = () => {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Check if user is authenticated
+    if (!user) {
+      setShowAuthDialog(true)
+      return
+    }
+
     const isValid = await validateCompany(values.companyName)
     
     if (!isValid) {
@@ -658,6 +675,24 @@ const StartPractice = () => {
           </Form>
         </div>
       </div>
+
+      {/* Authentication Required Dialog */}
+      <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Authentication Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              You need to create an account or sign in to take the test. This allows us to save your results and track your progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => navigate('/auth')}>
+              Sign In / Create Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
