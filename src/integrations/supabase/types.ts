@@ -47,6 +47,57 @@ export type Database = {
         }
         Relationships: []
       }
+      insight_tracker: {
+        Row: {
+          id: number
+          insight_ids: number[]
+          last_updated: string
+          user_id: string
+        }
+        Insert: {
+          id?: number
+          insight_ids?: number[]
+          last_updated?: string
+          user_id: string
+        }
+        Update: {
+          id?: number
+          insight_ids?: number[]
+          last_updated?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      insights: {
+        Row: {
+          category: string
+          date_added: string
+          headline: string
+          id: number
+          image_url: string | null
+          source_link: string | null
+          summary: string
+        }
+        Insert: {
+          category: string
+          date_added?: string
+          headline: string
+          id?: number
+          image_url?: string | null
+          source_link?: string | null
+          summary: string
+        }
+        Update: {
+          category?: string
+          date_added?: string
+          headline?: string
+          id?: number
+          image_url?: string | null
+          source_link?: string | null
+          summary?: string
+        }
+        Relationships: []
+      }
       interview_results: {
         Row: {
           company_name: string | null
