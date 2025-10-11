@@ -63,8 +63,9 @@ const WaitingScreen = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(20);
+  const [timeRemaining, setTimeRemaining] = useState(30);
   const [statusMessage, setStatusMessage] = useState("Initializing…");
+  const [questionsReady, setQuestionsReady] = useState(false);
   const [headerMessage] = useState(() => 
     HEADER_MESSAGES[Math.floor(Math.random() * HEADER_MESSAGES.length)]
   );
@@ -90,32 +91,56 @@ const WaitingScreen = () => {
     fetchInsights();
   }, []);
 
-  // Progress and timer logic
+  // Poll for questions readiness
+  useEffect(() => {
+    const userId = location.state?.userId;
+    if (!userId) return;
+
+    const pollInterval = setInterval(async () => {
+      // Poll Supabase for generated questions
+      const { data, error } = await supabase
+        .from("interview_results")
+        .select("id")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        setQuestionsReady(true);
+        clearInterval(pollInterval);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [location.state?.userId]);
+
+  // Navigate when questions are ready
+  useEffect(() => {
+    if (questionsReady) {
+      const testData = location.state;
+      setTimeout(() => {
+        if (testData?.testType === "AI Video Interview") {
+          navigate(`/ai-video-interview/${testData.companyName}/${testData.jobTitle}`, {
+            state: testData
+          });
+        } else {
+          navigate(`/mcq-test/${testData?.companyName || "General"}/${testData?.jobTitle || "Position"}`, {
+            state: testData
+          });
+        }
+      }, 500);
+    }
+  }, [questionsReady, navigate, location.state]);
+
+  // Progress and timer logic (estimated)
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const newProgress = prev + 5;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          // Navigate to quiz/interview page when done
-          setTimeout(() => {
-            const testData = location.state;
-            if (testData?.testType === "AI Video Interview") {
-              navigate(`/ai-video-interview/${testData.companyName}/${testData.jobTitle}`, {
-                state: testData
-              });
-            } else {
-              navigate(`/mcq-test/${testData?.companyName || "General"}/${testData?.jobTitle || "Position"}`, {
-                state: testData
-              });
-            }
-          }, 500);
-          return 100;
-        }
+        const newProgress = Math.min(prev + 3.33, 95); // Slower increment, cap at 95%
 
         // Update status messages
-        if (STATUS_MESSAGES[newProgress]) {
-          setStatusMessage(STATUS_MESSAGES[newProgress]);
+        if (STATUS_MESSAGES[Math.round(newProgress)]) {
+          setStatusMessage(STATUS_MESSAGES[Math.round(newProgress)]);
         }
 
         return newProgress;
@@ -125,15 +150,15 @@ const WaitingScreen = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [navigate, location.state]);
+  }, []);
 
-  // Card carousel logic
+  // Card carousel logic (slower)
   useEffect(() => {
     if (insights.length === 0) return;
 
     const carouselInterval = setInterval(() => {
       setCurrentCardIndex((prev) => (prev + 1) % insights.length);
-    }, 4000);
+    }, 8000);
 
     return () => clearInterval(carouselInterval);
   }, [insights.length]);
@@ -154,7 +179,7 @@ const WaitingScreen = () => {
         zIndex: 20,
         scale: 0.9,
         opacity: 0.6,
-        x: 100,
+        x: 250,
         filter: "blur(3px)"
       };
     } else {
@@ -162,7 +187,7 @@ const WaitingScreen = () => {
         zIndex: 10,
         scale: 0.85,
         opacity: 0.4,
-        x: -100,
+        x: -250,
         filter: "blur(5px)"
       };
     }
@@ -195,13 +220,13 @@ const WaitingScreen = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="absolute top-8 right-8 w-64 z-20"
+          className="absolute top-24 right-8 w-64 z-20"
         >
           <div className="glass-card p-4 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-blue-400">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm font-medium">{timeRemaining}s</span>
+                <span className="text-sm font-medium">~{timeRemaining}s</span>
               </div>
               <span className="text-xs text-gray-400">{Math.round(progress)}%</span>
             </div>
@@ -216,7 +241,7 @@ const WaitingScreen = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-xs text-gray-400 mt-3 text-center"
             >
-              {statusMessage}
+              {questionsReady ? "Questions ready! ✨" : statusMessage}
             </motion.p>
           </div>
         </motion.div>
@@ -252,6 +277,9 @@ const WaitingScreen = () => {
                             src={insight.image_url}
                             alt={insight.headline}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center">
@@ -260,8 +288,12 @@ const WaitingScreen = () => {
                             </span>
                           </div>
                         )}
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/80" />
+                        {/* Gradient overlay - lighter for main card */}
+                        <div className={`absolute inset-0 bg-gradient-to-b ${
+                          (index - currentCardIndex + insights.length) % insights.length === 0
+                            ? 'from-transparent via-black/20 to-black/60'
+                            : 'from-transparent via-black/40 to-black/80'
+                        }`} />
                         
                         {/* Headline on image */}
                         <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -276,7 +308,7 @@ const WaitingScreen = () => {
 
                       {/* Summary Section - Bottom 40% */}
                       <div className="h-[40%] p-6 flex flex-col justify-between">
-                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">
+                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
                           {insight.summary}
                         </p>
                         {insight.source_link && (

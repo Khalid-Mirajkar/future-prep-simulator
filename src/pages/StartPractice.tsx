@@ -219,85 +219,7 @@ const StartPractice = () => {
 
     console.log("Sending webhook payload:", webhookPayload)
 
-    try {
-      const response = await fetch("https://n8n-production-3583.up.railway.app/webhook/generate-questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(webhookPayload),
-      })
-
-      console.log("Webhook response status:", response.status)
-      console.log("Webhook response headers:", Object.fromEntries(response.headers.entries()))
-
-      // Handle different HTTP status codes
-      if (!response.ok) {
-        let errorMessage = "Unknown error occurred"
-        
-        if (response.status === 404) {
-          errorMessage = "Webhook endpoint not found. Please check if n8n is running on port 5678."
-        } else if (response.status === 500) {
-          errorMessage = "Server error occurred. Please check n8n workflow configuration."
-        } else if (response.status === 0 || response.status >= 400) {
-          errorMessage = `Request failed with status ${response.status}. Please check your network connection and n8n setup.`
-        }
-
-        console.error(`Webhook request failed with status ${response.status}:`, errorMessage)
-        
-        // Try to get response text for more details
-        try {
-          const responseText = await response.text()
-          console.error("Response body:", responseText)
-        } catch (e) {
-          console.error("Could not read response body:", e)
-        }
-
-        toast({
-          variant: "destructive",
-          title: "Webhook Error",
-          description: errorMessage,
-        })
-        return
-      }
-
-      // Try to parse response if it exists
-      let responseData = null
-      try {
-        const responseText = await response.text()
-        console.log("Webhook response body:", responseText)
-        
-        if (responseText) {
-          responseData = JSON.parse(responseText)
-          console.log("Parsed webhook response:", responseData)
-        }
-      } catch (e) {
-        console.log("Response is not JSON or empty, which is fine for webhook")
-      }
-
-      console.log("Webhook request successful!")
-      
-    } catch (error) {
-      console.error("Network error or request failed:", error)
-      
-      let errorMessage = "Failed to send test details. Please try again."
-      
-      // Handle specific error types
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        errorMessage = "Cannot connect to n8n webhook. Please ensure n8n is running on localhost:5678 and the webhook is active."
-      } else if (error instanceof Error) {
-        errorMessage = `Connection failed: ${error.message}. Please check if n8n is running and accessible.`
-      }
-
-      toast({
-        variant: "destructive",
-        title: "Connection Error",
-        description: errorMessage,
-      })
-      return
-    }
-
-    // Navigate to waiting screen with test data
+    // Navigate immediately to waiting screen
     navigate("/waiting", {
       state: {
         testType: values.testType === "mcq" ? "MCQ Test" : "AI Video Interview",
@@ -306,8 +228,29 @@ const StartPractice = () => {
         companyLogo: companyData?.logo,
         difficulty: values.difficulty,
         numberOfQuestions: values.numberOfQuestions,
+        userId: user.id,
       }
     })
+
+    // Fire webhook asynchronously (don't block navigation)
+    fetch("https://n8n-production-3583.up.railway.app/webhook/generate-questions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(webhookPayload),
+    })
+      .then(async (response) => {
+        console.log("Webhook response status:", response.status)
+        if (!response.ok) {
+          console.error(`Webhook failed with status ${response.status}`)
+        } else {
+          console.log("Webhook request successful!")
+        }
+      })
+      .catch((error) => {
+        console.error("Webhook error:", error)
+      })
   }
 
   const handleCompanyBlur = async () => {
