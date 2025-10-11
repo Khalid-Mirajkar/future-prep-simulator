@@ -23,6 +23,7 @@ import AIVideoInterview from "./pages/AIVideoInterview";
 import CVChecker from "./pages/CVChecker";
 import Leaderboard from "./pages/Leaderboard";
 import LogoTesting from "./pages/LogoTesting";
+import WaitingScreen from "./pages/WaitingScreen";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/start-practice" element={<StartPractice />} />
+        <Route path="/waiting" element={<WaitingScreen />} />
         <Route path="/mcq-test/:companyName/:jobTitle" element={<MCQTest />} />
         <Route path="/mcq-test" element={<MCQTest />} />
         <Route path="/ai-video-interview/:companyName/:jobTitle" element={<AIVideoInterview />} />

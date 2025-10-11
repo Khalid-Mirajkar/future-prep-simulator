@@ -297,45 +297,17 @@ const StartPractice = () => {
       return
     }
 
-    if (values.testType === "mcq") {
-      const companyName = encodeURIComponent(companyData?.name || values.companyName);
-      const jobTitle = encodeURIComponent(values.jobTitle);
-      const params = new URLSearchParams({
-        difficulty: values.difficulty || 'intermediate',
-        numberOfQuestions: values.numberOfQuestions || '15',
-        ...(companyData?.logo && { companyLogo: companyData.logo })
-      });
-      
-      navigate(`/mcq-test/${companyName}/${jobTitle}?${params.toString()}`, { 
-        state: { 
-          companyName: companyData?.name || values.companyName, 
-          jobTitle: values.jobTitle,
-          companyLogo: companyData?.logo,
-          difficulty: values.difficulty,
-          numberOfQuestions: values.numberOfQuestions,
-        } 
-      })
-    } else if (values.testType === "video") {
-      const companyName = encodeURIComponent(companyData?.name || values.companyName);
-      const jobTitle = encodeURIComponent(values.jobTitle);
-      const params = new URLSearchParams({
-        difficulty: values.difficulty || 'intermediate',
-        numberOfQuestions: values.numberOfQuestions || '15',
-        ...(companyData?.logo && { companyLogo: companyData.logo })
-      });
-      
-      navigate(`/ai-video-interview/${companyName}/${jobTitle}?${params.toString()}`, { 
-        state: { 
-          companyName: companyData?.name || values.companyName, 
-          jobTitle: values.jobTitle,
-          companyLogo: companyData?.logo,
-          difficulty: values.difficulty,
-          numberOfQuestions: values.numberOfQuestions,
-        } 
-      })
-    } else {
-      navigate("/coming-soon")
-    }
+    // Navigate to waiting screen with test data
+    navigate("/waiting", {
+      state: {
+        testType: values.testType === "mcq" ? "MCQ Test" : "AI Video Interview",
+        companyName: companyData?.name || values.companyName,
+        jobTitle: values.jobTitle,
+        companyLogo: companyData?.logo,
+        difficulty: values.difficulty,
+        numberOfQuestions: values.numberOfQuestions,
+      }
+    })
   }
 
   const handleCompanyBlur = async () => {
