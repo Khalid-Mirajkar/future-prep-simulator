@@ -63,12 +63,9 @@ const WaitingScreen = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [timeRemaining, setTimeRemaining] = useState(20); // Fixed 20 second wait
   const [statusMessage, setStatusMessage] = useState("Initializing…");
-  const [questionsReady, setQuestionsReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [testStartTime] = useState(() => new Date().toISOString());
-  const [minWaitComplete, setMinWaitComplete] = useState(false);
+  const [showAlmostReady, setShowAlmostReady] = useState(false);
   const [headerMessage] = useState(() => 
     HEADER_MESSAGES[Math.floor(Math.random() * HEADER_MESSAGES.length)]
   );
@@ -94,59 +91,9 @@ const WaitingScreen = () => {
     fetchInsights();
   }, []);
 
-  // Minimum wait timer (15 seconds before checking)
+  // Navigate to MCQTest after fixed delay
   useEffect(() => {
-    const minWaitTimer = setTimeout(() => {
-      setMinWaitComplete(true);
-    }, 15000);
-
-    return () => clearTimeout(minWaitTimer);
-  }, []);
-
-  // Poll for questions readiness - only after minimum wait
-  useEffect(() => {
-    const userId = location.state?.userId;
-    if (!userId || !minWaitComplete) return;
-
-    const pollInterval = setInterval(async () => {
-      // Poll for NEW records created AFTER test start
-      const { data, error } = await supabase
-        .from("interview_results")
-        .select("id, created_at")
-        .eq("user_id", userId)
-        .gte("created_at", testStartTime)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.error("Polling error:", error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        console.log("New questions detected:", data);
-        setQuestionsReady(true);
-        clearInterval(pollInterval);
-      }
-    }, 2000);
-
-    // Timeout after 60 seconds
-    const timeoutTimer = setTimeout(() => {
-      clearInterval(pollInterval);
-      if (!questionsReady) {
-        setError("Question generation is taking longer than expected. Please try again.");
-      }
-    }, 60000);
-
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeoutTimer);
-    };
-  }, [location.state?.userId, minWaitComplete, testStartTime, questionsReady]);
-
-  // Navigate when questions are ready
-  useEffect(() => {
-    if (questionsReady) {
+    const navigateTimer = setTimeout(() => {
       const testData = location.state;
       setTimeout(() => {
         if (testData?.testType === "AI Video Interview") {
@@ -159,14 +106,16 @@ const WaitingScreen = () => {
           });
         }
       }, 500);
-    }
-  }, [questionsReady, navigate, location.state]);
+    }, 20000); // Fixed 20 second delay
 
-  // Progress and timer logic (estimated)
+    return () => clearTimeout(navigateTimer);
+  }, [navigate, location.state]);
+
+  // Timer countdown with "Almost Ready" state
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const newProgress = Math.min(prev + 3.33, 95); // Slower increment, cap at 95%
+        const newProgress = Math.min(prev + 5, 100); // 100/20 = 5% per second
 
         // Update status messages
         if (STATUS_MESSAGES[Math.round(newProgress)]) {
@@ -176,7 +125,13 @@ const WaitingScreen = () => {
         return newProgress;
       });
 
-      setTimeRemaining((prev) => Math.max(0, prev - 1));
+      setTimeRemaining((prev) => {
+        const newTime = Math.max(0, prev - 1);
+        if (newTime === 0) {
+          setShowAlmostReady(true);
+        }
+        return newTime;
+      });
     }, 1000);
 
     return () => clearInterval(interval);
@@ -231,19 +186,6 @@ const WaitingScreen = () => {
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
 
-        {/* Error State */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-8 left-1/2 transform -translate-x-1/2 z-50 max-w-md"
-          >
-            <div className="glass-card p-4 rounded-xl backdrop-blur-xl bg-red-500/10 border border-red-500/30">
-              <p className="text-red-400 text-sm text-center">{error}</p>
-            </div>
-          </motion.div>
-        )}
-
         {/* Header Section */}
         <div className="relative z-10 pt-20 pb-8 px-6">
           <motion.div
@@ -284,7 +226,13 @@ const WaitingScreen = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-xs text-gray-400 mt-3 text-center"
             >
-              {questionsReady ? "Questions ready! ✨" : statusMessage}
+              {showAlmostReady ? (
+                <span className="text-purple-400 font-semibold animate-pulse">
+                  Almost ready... ✨
+                </span>
+              ) : (
+                statusMessage
+              )}
             </motion.p>
           </div>
         </motion.div>
@@ -351,7 +299,7 @@ const WaitingScreen = () => {
 
                       {/* Summary Section - Bottom 40% */}
                       <div className="h-[40%] p-6 flex flex-col justify-between">
-                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
+                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-6">
                           {insight.summary}
                         </p>
                         {insight.source_link && (
