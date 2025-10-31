@@ -14,14 +14,35 @@ serve(async (req) => {
   try {
     const { text } = await req.json();
 
-    if (!text) {
-      throw new Error('Text is required');
+    // Input validation
+    if (!text || typeof text !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Text is required and must be a string', success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (text.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Text must be less than 1000 characters', success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Generating voice via n8n webhook for text:', text);
 
+    // Get webhook URL from environment variable
+    const webhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
+    if (!webhookUrl) {
+      console.error('N8N_WEBHOOK_URL not configured');
+      return new Response(
+        JSON.stringify({ error: 'Voice generation service not configured', success: false }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Call the n8n webhook endpoint
-    const response = await fetch('http://localhost:5678/webhook-test/generate_audio', {
+    const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

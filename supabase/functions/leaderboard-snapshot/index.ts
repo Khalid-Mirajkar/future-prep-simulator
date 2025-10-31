@@ -126,6 +126,15 @@ serve(async (req) => {
     const url = new URL(req.url);
     const league = url.searchParams.get('league') || 'all';
 
+    // Input validation for league parameter
+    const validLeagues = ['all', 'gold', 'silver', 'bronze'];
+    if (!validLeagues.includes(league)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid league parameter. Must be one of: all, gold, silver, bronze' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Fetch all interview results
     const { data: interviews, error: interviewsError } = await supabase
       .from('interview_results')

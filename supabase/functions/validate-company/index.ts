@@ -16,6 +16,27 @@ serve(async (req) => {
   try {
     const { companyName } = await req.json()
     
+    // Input validation
+    if (!companyName || typeof companyName !== 'string') {
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: 'Company name is required and must be a string' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (companyName.length > 100) {
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: 'Company name must be less than 100 characters' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     // Enhanced validation logic with a more extensive list of known companies
     const knownCompanies = {
       'google': { name: 'Google', domain: 'google.com', logo: 'https://logo.clearbit.com/google.com' },

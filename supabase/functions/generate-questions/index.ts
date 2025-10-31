@@ -22,9 +22,39 @@ serve(async (req) => {
     const { companyName, jobTitle, seed, numberOfQuestions = "10" } = await req.json()
     
     // Validate inputs
-    if (!companyName || !jobTitle) {
+    if (!companyName || typeof companyName !== 'string' || companyName.trim().length === 0) {
       return new Response(
-        JSON.stringify({ error: "Missing company name or job title" }),
+        JSON.stringify({ error: "Company name is required and must be a non-empty string" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (companyName.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Company name must be less than 100 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (!jobTitle || typeof jobTitle !== 'string' || jobTitle.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Job title is required and must be a non-empty string" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    if (jobTitle.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Job title must be less than 100 characters" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // Validate numberOfQuestions
+    const numQuestions = parseInt(numberOfQuestions);
+    if (isNaN(numQuestions) || numQuestions < 1 || numQuestions > 50) {
+      return new Response(
+        JSON.stringify({ error: "Number of questions must be between 1 and 50" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
@@ -93,22 +123,16 @@ serve(async (req) => {
                        Deno.env.get("Open AI API") || 
                        Deno.env.get("OPEN_AI_API_KEY");
     
-    // Debug information about available environment variables
-    const envVars = Object.keys(Deno.env.toObject()).filter(key => !key.startsWith("SUPABASE_"));
-    console.log("Available non-Supabase environment variables:", envVars);
-    
     // Remove any potential whitespace from the key
     if (openaiApiKey) {
       openaiApiKey = openaiApiKey.trim();
-      console.log("OpenAI API key found with length:", openaiApiKey.length);
-      console.log("API key prefix:", openaiApiKey.substring(0, 5) + "...");
+      console.log("OpenAI API key found");
     } else {
-      console.error("Missing OpenAI API key - Available env vars:", envVars);
+      console.error("Missing OpenAI API key");
       return new Response(
         JSON.stringify({ 
           error: "OpenAI API key not found in environment variables", 
-          details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'",
-          availableSecrets: envVars
+          details: "Please add your OpenAI API key to the Edge Function secrets with the name 'OPENAI_API_KEY'"
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

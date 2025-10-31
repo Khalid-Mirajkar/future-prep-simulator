@@ -14,6 +14,40 @@ serve(async (req) => {
 
   try {
     const { text, action, talkId } = await req.json();
+    
+    // Input validation
+    if (action && typeof action !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Action must be a string' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'create') {
+      if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Text is required and must be a non-empty string' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (text.length > 500) {
+        return new Response(
+          JSON.stringify({ error: 'Text must be less than 500 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (action === 'status') {
+      if (!talkId || typeof talkId !== 'string' || talkId.trim().length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Talk ID is required for status checks' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
     const didApiKey = Deno.env.get('DID_API_KEY');
 
     if (!didApiKey) {

@@ -14,8 +14,19 @@ serve(async (req) => {
   try {
     const { text } = await req.json();
 
-    if (!text) {
-      throw new Error('Text is required');
+    // Input validation
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Text is required and must be a non-empty string', success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (text.length > 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Text must be less than 1000 characters', success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Generating voice with DIA model for text:', text);

@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Clock } from "lucide-react";
 
 interface Insight {
-  id: number;
+  id: string;
   category: string;
   headline: string;
   summary: string;

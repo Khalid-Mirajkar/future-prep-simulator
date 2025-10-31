@@ -15,6 +15,43 @@ serve(async (req) => {
   try {
     const { cvText, industry, jobTitle, company, wordCount, isShortCV } = await req.json()
     
+    // Input validation
+    if (!cvText || typeof cvText !== 'string' || cvText.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'CV text is required and must be a non-empty string' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Limit CV text to 50KB (approximately 50,000 characters)
+    if (cvText.length > 50000) {
+      return new Response(
+        JSON.stringify({ error: 'CV text is too large. Maximum size is 50KB' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!industry || typeof industry !== 'string' || industry.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid industry. Must be a string of max 100 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!jobTitle || typeof jobTitle !== 'string' || jobTitle.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid job title. Must be a string of max 100 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!company || typeof company !== 'string' || company.length > 100) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid company. Must be a string of max 100 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openaiApiKey) {
       throw new Error('OpenAI API key not configured')
