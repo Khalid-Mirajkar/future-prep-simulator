@@ -73,16 +73,16 @@ export type Database = {
           category: string
           date_added: string
           headline: string
-          id: number
+          id: string
           image_url: string | null
           source_link: string | null
           summary: string
         }
         Insert: {
           category: string
-          date_added?: string
+          date_added: string
           headline: string
-          id?: number
+          id?: string
           image_url?: string | null
           source_link?: string | null
           summary: string
@@ -91,7 +91,7 @@ export type Database = {
           category?: string
           date_added?: string
           headline?: string
-          id?: number
+          id?: string
           image_url?: string | null
           source_link?: string | null
           summary?: string
