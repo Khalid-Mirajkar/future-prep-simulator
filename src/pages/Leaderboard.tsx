@@ -178,6 +178,9 @@ const Leaderboard = () => {
                 {data?.currentUser && user.username_masked === `User#${data.currentUser.user_id.slice(-4)}` && (
                   <Badge variant="secondary" className="text-xs">You</Badge>
                 )}
+                {user.is_bot && (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">Demo</Badge>
+                )}
               </div>
             </TableCell>
             <TableCell className="text-center font-medium">{user.average_score}%</TableCell>
@@ -308,9 +311,12 @@ const Leaderboard = () => {
             {data?.currentUser && (
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
                 <CardContent className="pt-6">
-                  <div className="text-center mb-4">
+                  <div className="text-center space-y-2">
                     <p className="text-lg font-medium text-primary">
                       {getUserPositionText()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Note: Users marked as "Demo" are simulated competitors used to populate the leaderboard.
                     </p>
                   </div>
                 </CardContent>
