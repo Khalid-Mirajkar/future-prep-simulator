@@ -4,10 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  linkedin_url: string | null;
+  name: string | null;
 }
 
 export function useProfile() {

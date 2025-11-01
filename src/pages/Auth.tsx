@@ -5,13 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft } from "lucide-react";
 
 export default function Auth() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [newsletter, setNewsletter] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLogin, setIsLogin] = useState(true);
@@ -31,17 +35,66 @@ export default function Auth() {
           password,
         });
         if (error) throw error;
-        navigate("/");
+        
+        // Handle newsletter subscription for login
+        if (newsletter) {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from('newsletter_subscribers').insert({
+            email,
+            user_id: user?.id,
+            source: 'signin'
+          }); // Ignore errors (e.g., duplicate subscription)
+        }
+        
+        navigate("/dashboard");
       } else {
-        const { error } = await supabase.auth.signUp({
+        // Validate passwords match
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        const redirectUrl = `${window.location.origin}/`;
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              name: name
+            }
+          }
         });
+        
         if (error) throw error;
+        
+        // Create profile with name
+        if (data.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            name: name
+          });
+          
+          // Handle newsletter subscription
+          if (newsletter) {
+            await supabase.from('newsletter_subscribers').insert({
+              email,
+              user_id: data.user.id,
+              source: 'signup'
+            }); // Ignore errors (e.g., duplicate subscription)
+          }
+        }
+        
         toast({
           title: "Success!",
-          description: "Please check your email to verify your account.",
+          description: "Account created successfully. Redirecting to dashboard...",
         });
+        
+        // Redirect to dashboard after successful signup
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
       }
     } catch (error: any) {
       setError(error.message);
@@ -79,7 +132,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
+    <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md p-8 space-y-6 backdrop-blur-md bg-black/30 rounded-xl border border-white/10">
         <h2 className="text-3xl font-bold text-center">
           {isLogin ? "Welcome Back" : "Create Account"}
@@ -90,6 +143,20 @@ export default function Auth() {
           </Alert>
         )}
         <form onSubmit={handleAuth} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="bg-black/50 border-white/20"
+                placeholder="Enter your full name"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -112,6 +179,36 @@ export default function Auth() {
               className="bg-black/50 border-white/20"
             />
           </div>
+          {!isLogin && (
+            <div>
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="bg-black/50 border-white/20"
+              />
+            </div>
+          )}
+          
+          {/* Newsletter Checkbox */}
+          <div className="flex items-start space-x-2">
+            <Checkbox
+              id="newsletter"
+              checked={newsletter}
+              onCheckedChange={(checked) => setNewsletter(checked as boolean)}
+              className="mt-1"
+            />
+            <label
+              htmlFor="newsletter"
+              className="text-sm text-gray-300 leading-tight cursor-pointer"
+            >
+              Yes! Send me insider tips & success stories
+            </label>
+          </div>
+          
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
           </Button>

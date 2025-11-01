@@ -131,14 +131,37 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          source: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
           first_name: string | null
           id: string
           last_name: string | null
-          linkedin_url: string | null
-          phone: string | null
+          name: string | null
           updated_at: string | null
         }
         Insert: {
@@ -146,8 +169,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
-          linkedin_url?: string | null
-          phone?: string | null
+          name?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -155,9 +177,32 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          linkedin_url?: string | null
-          phone?: string | null
+          name?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_feedback: {
+        Row: {
+          email: string
+          feedback_text: string
+          id: string
+          submitted_at: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          feedback_text: string
+          id?: string
+          submitted_at?: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          feedback_text?: string
+          id?: string
+          submitted_at?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -1,17 +1,17 @@
-
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
-import { Home, Menu, BarChart2, Clock, TrendingUp, TrendingDown } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Home, Menu, BarChart2, Clock, TrendingUp, TrendingDown, MessageSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 import PageHeader from "@/components/PageHeader";
 
 const Dashboard = () => {
@@ -20,6 +20,9 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { analytics, isLoading, error } = useAnalytics();
+  const [feedback, setFeedback] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const { toast } = useToast();
 
   // Get most recent interviews (last 5)
   const recentInterviews = analytics?.scoreByDate.slice(0, 5) || [];
@@ -43,6 +46,45 @@ const Dashboard = () => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}m ${remainingSeconds}s`;
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedback.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter your feedback"
+      });
+      return;
+    }
+
+    setSubmittingFeedback(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) throw new Error("Not authenticated");
+
+      await supabase.from('user_feedback').insert({
+        user_id: authUser.id,
+        email: authUser.email || '',
+        feedback_text: feedback
+      });
+
+      toast({
+        title: "Success!",
+        description: "Thanks for your feedback!"
+      });
+      
+      setFeedback("");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit feedback. Please try again."
+      });
+    } finally {
+      setSubmittingFeedback(false);
+    }
   };
 
   return (
@@ -85,7 +127,7 @@ const Dashboard = () => {
               description={`Select an option from the ${isMobile ? "menu" : "sidebar"} to get started.`}
             />
             
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-6 mb-6">
               {/* Quick Stats Card */}
               <Card className="bg-gradient-to-br from-purple-900/30 to-black/30 border border-purple-500/30">
                 <CardHeader className="pb-2">
@@ -239,6 +281,36 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Feedback Section */}
+            <Card className="bg-gradient-to-br from-orange-900/30 to-black/30 border border-orange-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg md:text-xl font-bold flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2 text-orange-400" />
+                  Feedback
+                </CardTitle>
+                <CardDescription className="text-gray-400 text-sm">
+                  Help us improve by sharing your thoughts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Textarea
+                    placeholder="Tell us what you think about SapphHIRE..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    className="bg-black/50 border-white/20 min-h-[100px]"
+                  />
+                  <Button
+                    onClick={handleSubmitFeedback}
+                    disabled={submittingFeedback || !feedback.trim()}
+                    className="w-full"
+                  >
+                    {submittingFeedback ? "Submitting..." : "Submit Feedback"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>

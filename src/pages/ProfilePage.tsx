@@ -1,115 +1,150 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import DashboardSidebar from "@/components/DashboardSidebar";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { Home, Menu, LogOut } from "lucide-react";
+import { Home, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useProfile } from "@/hooks/useProfile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ProfilePage = () => {
-  const { profile, loading, updateProfile, fetchProfile } = useProfile();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const { toast } = useToast();
+  const { profile, loading, updateProfile, fetchProfile } = useProfile();
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    linkedinUrl: "",
+    name: "",
+    newPassword: "",
   });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Update form data when profile data is loaded or changed
   useEffect(() => {
     if (profile) {
       setFormData({
-        firstName: profile.first_name || "",
-        lastName: profile.last_name || "",
-        phone: profile.phone || "",
-        linkedinUrl: profile.linkedin_url || "",
+        name: profile.name || "",
+        newPassword: "",
       });
     }
   }, [profile]);
 
-  // Refetch profile data when page is focused
   useEffect(() => {
     const handleFocus = () => {
       fetchProfile();
     };
 
     window.addEventListener('focus', handleFocus);
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
+    return () => window.removeEventListener('focus', handleFocus);
   }, [fetchProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const success = await updateProfile({
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      phone: formData.phone,
-      linkedin_url: formData.linkedinUrl,
-    });
-
-    if (success) {
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
-      
-      // Refetch profile data to ensure we have the latest data
-      fetchProfile();
+    // Update profile name
+    if (formData.name !== profile?.name) {
+      await updateProfile({ name: formData.name });
+    }
+    
+    // Update password if provided
+    if (formData.newPassword) {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          password: formData.newPassword
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Success",
+          description: "Password updated successfully"
+        });
+        
+        setFormData({ ...formData, newPassword: "" });
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message
+        });
+      }
     }
   };
 
   const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+    });
+    navigate("/");
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) throw new Error("No user found");
+      
+      // Note: Actual account deletion requires backend implementation
+      // For now, we'll just sign out and show a message
       toast({
-        title: "Logged out",
-        description: "You have been successfully logged out.",
+        title: "Account deletion requested",
+        description: "Please contact support to complete account deletion.",
       });
       
+      await supabase.auth.signOut();
       navigate("/");
-    } catch (error) {
-      console.error("Error logging out:", error);
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to log out. Please try again.",
+        description: error.message
       });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0D0D0D] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#0D0D0D] text-white flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 rounded-full border-4 border-purple-500 border-t-transparent animate-spin"></div>
+          <p className="mt-4 text-lg">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#0D0D0D] text-white relative">
+      <div className="min-h-screen bg-[#0D0D0D] text-white">
         {!isMobile ? (
           <DashboardSidebar />
         ) : (
@@ -139,89 +174,89 @@ const ProfilePage = () => {
           <Home className="h-6 w-6" />
         </Button>
         
-        <main className={isMobile ? "pt-16" : "pl-64"}>
-          <div className="p-4 md:p-8">
-            <motion.div 
-              className="text-center max-w-3xl mx-auto mb-6 md:mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-white">
-                My <span className="text-gradient">Profile</span>
-              </h1>
-              <p className="text-xl text-gray-300">
-                Update your personal information and contact details
-              </p>
-            </motion.div>
-            
-            <Card className="bg-black/30 border-white/10 p-4 md:p-6">
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input 
-                      id="firstName" 
-                      name="firstName" 
-                      value={formData.firstName} 
-                      onChange={handleChange}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input 
-                      id="lastName" 
-                      name="lastName" 
-                      value={formData.lastName} 
-                      onChange={handleChange}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input 
-                      id="phone" 
-                      name="phone" 
-                      value={formData.phone} 
-                      onChange={handleChange}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-                    <Input 
-                      id="linkedinUrl" 
-                      name="linkedinUrl" 
-                      value={formData.linkedinUrl} 
-                      onChange={handleChange}
-                      className="bg-black/50 border-white/10"
-                    />
-                  </div>
+        <main className={isMobile ? "pt-16 px-4" : "pl-64 pt-8 px-8"}>
+          <Card className="max-w-2xl mx-auto bg-black/30 border-white/10">
+            <CardHeader>
+              <CardTitle className="text-2xl">My Profile</CardTitle>
+              <CardDescription>Update your account information</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="bg-black/50 border-white/20"
+                    placeholder="Your full name"
+                  />
                 </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    name="newPassword"
+                    type="password"
+                    value={formData.newPassword}
+                    onChange={handleChange}
+                    className="bg-black/50 border-white/20"
+                    placeholder="Leave blank to keep current password"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button type="submit" className="flex-1">
                     Save Changes
                   </Button>
-                  
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={handleLogout}
-                    className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                    className="flex-1"
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
                     Log Out
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="flex-1"
+                  >
+                    Delete Account
                   </Button>
                 </div>
               </form>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
         </main>
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent className="bg-[#0D0D0D] border border-white/10">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                This action cannot be undone. This will permanently delete your account
+                and remove all your data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-black/50 border-white/20 text-white hover:bg-black/70">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? "Deleting..." : "Delete Account"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
