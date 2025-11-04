@@ -28,10 +28,18 @@ const AIVideoInterview = () => {
     totalTime: number;
   } | null>(null);
   
-  const locationState = location.state as LocationState | undefined;
+  // Try to get data from location.state or localStorage
+  let locationState = location.state as LocationState | undefined;
+  
+  if (!locationState || !locationState.companyName || !locationState.jobTitle) {
+    const stored = localStorage.getItem('testData');
+    if (stored) {
+      locationState = JSON.parse(stored) as LocationState;
+    }
+  }
 
-  if (!locationState) {
-    navigate('/start-practice');
+  if (!locationState || !locationState.companyName || !locationState.jobTitle) {
+    navigate('/start-practice', { replace: true });
     return null;
   }
 

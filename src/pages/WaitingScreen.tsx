@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PageTransition from "@/components/PageTransition";
 import { Progress } from "@/components/ui/progress";
 import { Clock } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Insight {
   id: string;
@@ -60,10 +61,11 @@ const STATUS_MESSAGES: Record<number, string> = {
 const WaitingScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [insights, setInsights] = useState<Insight[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(20); // Fixed 20 second wait
+  const [timeRemaining, setTimeRemaining] = useState(20);
   const [statusMessage, setStatusMessage] = useState("Initializing…");
   const [showAlmostReady, setShowAlmostReady] = useState(false);
   const [headerMessage] = useState(() => 
@@ -72,6 +74,24 @@ const WaitingScreen = () => {
   const [quote] = useState(() => 
     MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]
   );
+
+  // Validate and store test data
+  useEffect(() => {
+    const testData = location.state;
+    
+    if (!testData || !testData.companyName || !testData.jobTitle) {
+      toast({
+        title: "Missing Information",
+        description: "Please start from the practice page and fill in all required fields.",
+        variant: "destructive",
+      });
+      navigate('/start-practice', { replace: true });
+      return;
+    }
+
+    // Store in localStorage as backup
+    localStorage.setItem('testData', JSON.stringify(testData));
+  }, [location.state, navigate, toast]);
 
   // Fetch insights from Supabase
   useEffect(() => {
@@ -91,25 +111,40 @@ const WaitingScreen = () => {
     fetchInsights();
   }, []);
 
-  // Navigate to MCQTest after fixed delay
+  // Navigate to test after delay
   useEffect(() => {
     const navigateTimer = setTimeout(() => {
-      const testData = location.state;
+      // Try to get data from location.state or localStorage
+      let testData = location.state;
+      
+      if (!testData || !testData.companyName || !testData.jobTitle) {
+        const stored = localStorage.getItem('testData');
+        if (stored) {
+          testData = JSON.parse(stored);
+        }
+      }
+
+      if (!testData || !testData.companyName || !testData.jobTitle) {
+        toast({
+          title: "Session Expired",
+          description: "Please start a new practice session.",
+          variant: "destructive",
+        });
+        navigate('/start-practice', { replace: true });
+        return;
+      }
+
       setTimeout(() => {
-        if (testData?.testType === "AI Video Interview") {
-          navigate(`/ai-video-interview/${testData.companyName}/${testData.jobTitle}`, {
-            state: testData
-          });
+        if (testData.testType === "AI Video Interview") {
+          navigate('/ai-video-interview', { state: testData });
         } else {
-          navigate(`/mcq-test/${testData?.companyName || "General"}/${testData?.jobTitle || "Position"}`, {
-            state: testData
-          });
+          navigate('/mcq-test', { state: testData });
         }
       }, 500);
-    }, 20000); // Fixed 20 second delay
+    }, 20000);
 
     return () => clearTimeout(navigateTimer);
-  }, [navigate, location.state]);
+  }, [navigate, location.state, toast]);
 
   // Timer countdown with "Almost Ready" state
   useEffect(() => {

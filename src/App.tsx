@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -32,12 +33,10 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/start-practice" element={<StartPractice />} />
-        <Route path="/waiting" element={<WaitingScreen />} />
-        <Route path="/mcq-test/:companyName/:jobTitle" element={<MCQTest />} />
-        <Route path="/mcq-test" element={<MCQTest />} />
-        <Route path="/ai-video-interview/:companyName/:jobTitle" element={<AIVideoInterview />} />
-        <Route path="/ai-video-interview" element={<AIVideoInterview />} />
+        <Route path="/start-practice" element={<ProtectedRoute><StartPractice /></ProtectedRoute>} />
+        <Route path="/waiting" element={<ProtectedRoute><WaitingScreen /></ProtectedRoute>} />
+        <Route path="/mcq-test" element={<ProtectedRoute><MCQTest /></ProtectedRoute>} />
+        <Route path="/ai-video-interview" element={<ProtectedRoute><AIVideoInterview /></ProtectedRoute>} />
         <Route path="/results" element={<Results />} />
         <Route path="/results/:id" element={<Results />} />
         <Route path="/dashboard" element={<Dashboard />} />

@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMCQTest } from '@/hooks/useMCQTest';
 import MCQQuestionDisplay from '@/components/MCQQuestionDisplay';
 import MCQTestResults from '@/components/MCQTestResults';
@@ -22,21 +22,35 @@ interface LocationState {
 const MCQTest: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams();
   
-  // Safely access location.state with proper typing
-  const locationState = location.state as LocationState | undefined;
+  // Try to get data from location.state or localStorage
+  let locationState = location.state as LocationState | undefined;
   
-  // Get data from URL params if available, otherwise from location state
-  const companyName = params.companyName ? decodeURIComponent(params.companyName) : locationState?.companyName;
-  const jobTitle = params.jobTitle ? decodeURIComponent(params.jobTitle) : locationState?.jobTitle;
+  if (!locationState || !locationState.companyName || !locationState.jobTitle) {
+    const stored = localStorage.getItem('testData');
+    if (stored) {
+      locationState = JSON.parse(stored) as LocationState;
+    }
+  }
   
-  // Redirect to start-practice if no essential data is available
+  const companyName = locationState?.companyName;
+  const jobTitle = locationState?.jobTitle;
+  
+  // Redirect to start-practice if no data is available
   useEffect(() => {
     if (!companyName || !jobTitle) {
       navigate('/start-practice', { replace: true });
     }
   }, [companyName, jobTitle, navigate]);
+
+  // Clear localStorage after successful load
+  useEffect(() => {
+    if (companyName && jobTitle) {
+      return () => {
+        localStorage.removeItem('testData');
+      };
+    }
+  }, [companyName, jobTitle]);
   
   const {
     questions,
