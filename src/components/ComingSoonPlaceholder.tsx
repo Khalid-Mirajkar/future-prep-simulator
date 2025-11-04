@@ -1,19 +1,58 @@
-
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Home, Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const ComingSoonPlaceholder = () => {
   const navigate = useNavigate();
   const { section } = useParams();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifyMe, setNotifyMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
   
   const sectionName = section?.charAt(0).toUpperCase() + section?.slice(1).replace(/-/g, ' ');
+
+  const handleNotifyMe = async () => {
+    if (!notifyMe || !user) return;
+    
+    setLoading(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      await supabase.from('newsletter_subscribers').insert({
+        email: authUser?.email || '',
+        user_id: authUser?.id,
+        source: 'coming_soon'
+      });
+      
+      toast({
+        title: "Success!",
+        description: "You'll be notified when this feature launches.",
+      });
+      setNotifyMe(false);
+    } catch (error: any) {
+      // Ignore duplicate errors
+      if (!error.message?.includes('duplicate')) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to subscribe. Please try again.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white relative">
@@ -59,6 +98,35 @@ const ComingSoonPlaceholder = () => {
           <p className="text-gray-400 text-center max-w-lg mb-6 md:mb-8 px-4">
             This feature is currently under development. Check back later for updates!
           </p>
+          
+          {user && (
+            <div className="mt-6 p-6 border border-purple-500/30 rounded-lg bg-purple-900/10 max-w-lg mx-auto mb-6">
+              <div className="flex items-start space-x-3 mb-4">
+                <Checkbox
+                  id="notify"
+                  checked={notifyMe}
+                  onCheckedChange={(checked) => setNotifyMe(checked as boolean)}
+                  className="mt-1"
+                />
+                <label
+                  htmlFor="notify"
+                  className="text-sm text-gray-300 leading-tight cursor-pointer"
+                >
+                  Be the first to try this feature and get interview-ready before everyone else.
+                </label>
+              </div>
+              
+              {notifyMe && (
+                <Button
+                  onClick={handleNotifyMe}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? "Subscribing..." : "Notify Me"}
+                </Button>
+              )}
+            </div>
+          )}
           
           <Button onClick={() => navigate('/dashboard')} variant="outline">
             Back to Dashboard

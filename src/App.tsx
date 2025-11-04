@@ -12,7 +12,6 @@ import NotFound from "./pages/NotFound";
 import StartPractice from "./pages/StartPractice";
 import MCQTest from "./pages/MCQTest";
 import Results from "./pages/Results";
-import ComingSoon from "./pages/ComingSoon";
 import Dashboard from "./pages/Dashboard";
 import ComingSoonPlaceholder from "./components/ComingSoonPlaceholder";
 import ParticlesBackground from "./components/ParticlesBackground";
@@ -20,9 +19,8 @@ import ProfilePage from "./pages/ProfilePage";
 import Analytics from "./pages/Analytics";
 import History from "./pages/History";
 import AIVideoInterview from "./pages/AIVideoInterview";
-import CVChecker from "./pages/CVChecker";
-import Leaderboard from "./pages/Leaderboard";
 import WaitingScreen from "./pages/WaitingScreen";
+import Feedback from "./pages/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -42,13 +40,11 @@ const AnimatedRoutes = () => {
         <Route path="/ai-video-interview" element={<AIVideoInterview />} />
         <Route path="/results" element={<Results />} />
         <Route path="/results/:id" element={<Results />} />
-        <Route path="/coming-soon" element={<ComingSoon />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/profile" element={<ProfilePage />} />
         <Route path="/dashboard/analytics" element={<Analytics />} />
         <Route path="/dashboard/history" element={<History />} />
-        <Route path="/dashboard/cv-checker" element={<ComingSoon />} />
-        <Route path="/dashboard/leaderboard" element={<ComingSoon />} />
+        <Route path="/dashboard/feedback" element={<Feedback />} />
         <Route path="/dashboard/:section" element={<ComingSoonPlaceholder />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
